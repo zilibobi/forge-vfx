@@ -14,7 +14,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install rokit
-        run: curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+          echo "$HOME/.rokit/bin" >> $GITHUB_PATH
 
       - name: Install toolkit
         run: rokit install
