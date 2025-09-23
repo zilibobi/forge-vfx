@@ -1,8 +1,8 @@
 ![Banner](/forge-banner.png)
 
 <div align="center">
-  <img alt="View Documentation" src="https://img.shields.io/badge/Documentation-View?style=for-the-badge&label=View&color=c4a7e7&link=https%3A%2F%2Fdocs.zilibobi.dev%2Fvfx-forge%2F">
-  <img alt="Join Discord" src="https://img.shields.io/discord/1401872327162986626?logo=discord&style=for-the-badge&color=c4a7e7&logoColor=ffffff&label=Join%20Discord">
+  <a href="https://docs.zilibobi.dev/vfx-forge"><img alt="View Documentation" src="https://img.shields.io/badge/Documentation-View?style=for-the-badge&label=View&color=c4a7e7"></a>
+  <a href="https://discord.gg/Qme9KPN3pF"><img alt="Join Discord" src="https://img.shields.io/discord/1401872327162986626?logo=discord&style=for-the-badge&color=c4a7e7&logoColor=ffffff&label=Join%20Discord"></a>
 </div>
 
 # Emit Module
