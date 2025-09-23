@@ -19,7 +19,7 @@ jobs:
           echo "$HOME/.rokit/bin" >> $GITHUB_PATH
 
       - name: Install toolkit
-        run: rokit install
+        run: rokit install --no-trust-check
 
       - name: Build project
         run: rojo build -o ForgeVFX.rbxm
