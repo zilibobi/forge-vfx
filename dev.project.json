@@ -1,0 +1,16 @@
+{
+  "name": "forge-vfx-dev",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "ForgeVFX": {
+        "$path": "src",
+
+        "pkg": {
+          "$path": "pkg"
+        }
+      }
+    }
+  }
+}

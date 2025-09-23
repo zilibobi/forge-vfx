@@ -1,0 +1,2 @@
+#!/bin/bash
+rojo serve dev.project.json

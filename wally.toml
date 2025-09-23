@@ -1,0 +1,16 @@
+[package]
+version = "1.5.0-beta"
+
+name = "zilibobi/forge-vfx"
+description = "The official emit module from the VFX Forge plugin used to emit visual effects in-game."
+
+license = "VFX-DL-1.0"
+
+authors = ["zilibobi"]
+
+registry = "https://github.com/UpliftGames/wally-index"
+repository = "https://github.com/zilibobi/forge-vfx"
+
+realm = "shared"
+
+[dependencies]
