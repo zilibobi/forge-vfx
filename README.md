@@ -27,7 +27,7 @@ Check the [releases page](https://github.com/zilibobi/forge-vfx/releases/latest)
 ## Usage
 
 The module needs to be initialized before emitting any effects.
-After that the module is also exposed inside `shared.vfx`.
+After that it is also exposed inside `shared.vfx`.
 
 ```luau
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
