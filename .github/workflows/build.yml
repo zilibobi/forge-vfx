@@ -1,0 +1,31 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "release v*"
+
+jobs:
+  build:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install rokit
+        run: curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+
+      - name: Install toolkit
+        run: rokit install
+
+      - name: Build project
+        run: rojo build -o ForgeVFX.rbxm
+
+      - name: Release
+        uses: anton-yurchenko/git-release@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: |
+            ./ForgeVFX.rbxm
