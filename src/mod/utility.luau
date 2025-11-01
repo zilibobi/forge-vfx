@@ -355,16 +355,18 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
   if legacy_isFlipbook then
     decals = filter(start:GetChildren())
   else
-    local goal = ref:FindFirstChild("End")
+    local originalEnd = ref:FindFirstChild("End")
+    local originalStart = ref:FindFirstChild("Start")
 
-    if goal then
+    if originalEnd then
       for _, v in start:GetChildren() do
         if not v:IsA("Decal") then
           continue
         end
 
         local from = v
-        local to = goal:FindFirstChild(v.Name)
+
+        local to = originalEnd:FindFirstChild(v.Name)
 
         if not to or not to:IsA("Decal") then
           continue
@@ -374,6 +376,19 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
 
         fromToMap[from] = to
 
+        if not v:GetAttribute("FlipbookEnabled") then
+          table.insert(decals, v)
+        else
+          flipbooks[v] = utility.deserializeFlipbook(v:GetAttribute("FlipbookTextures"))
+        end
+      end
+
+      for _, v in originalStart:GetChildren() do
+        if not v:IsA("Decal") then
+          continue
+        end
+
+        -- convert children decals to flipbooks
         local children = v:GetChildren()
 
         do
@@ -411,12 +426,6 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
 
           v:SetAttribute("FlipbookEnabled", true)
           v:SetAttribute("FlipbookTextures", buffer.tostring(buf))
-        end
-
-        if not v:GetAttribute("FlipbookEnabled") then
-          table.insert(decals, v)
-        else
-          flipbooks[v] = utility.deserializeFlipbook(v:GetAttribute("FlipbookTextures"))
         end
       end
     end
