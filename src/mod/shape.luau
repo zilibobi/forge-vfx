@@ -96,21 +96,8 @@ function shape.getPointWithinCylinder(
     math.cos(theta) * width
   ) * size / 2
 
-  local u = pos2.Unit
-  local up = cframe.UpVector
-
-  if u ~= u then
-    u = Vector3.zero
-  end
-
-  if math.abs(u.Y) > 0.999 then
-    if normal == Enum.NormalId.Left or normal == Enum.NormalId.Right then
-      up = cframe.RightVector
-    else
-      up = cframe.LookVector
-    end
-  end
-
+  local tangent = Vector3.new(0, math.cos(theta) * width, -math.sin(theta) * width) * size / 2
+  local up = tangent.Magnitude > 0.001 and tangent.Unit or cframe.UpVector
   local res = cframe * CFrame.new(pos) * CFrame.lookAt(Vector3.zero, pos2, up)
 
   debug.profileend()
@@ -134,14 +121,11 @@ function shape.getPointWithinSphere(
   local v = rng:NextNumber()
 
   local theta = u * 2 * math.pi
-
   local phi = math.acos(2 * v - 1) * partial
-
   local r = rng:NextNumber(min_radius, 1) ^ (1 / 3)
 
   local sinTheta = math.sin(theta)
   local cosTheta = math.cos(theta)
-
   local sinPhi = math.sin(phi)
   local cosPhi = math.cos(phi)
 
@@ -154,7 +138,6 @@ function shape.getPointWithinSphere(
   end
 
   local half = size / 2
-
   local cf = shape.getSurfaceCFrame(cframe, n, Vector3.zero)
 
   -- stylua: ignore
@@ -164,21 +147,9 @@ function shape.getPointWithinSphere(
     r * cosPhi
   ) * half
 
-  local unit = pos.Unit
-  local up = cframe.UpVector
+  local tangent = Vector3.new(-sinPhi * sinTheta, sinPhi * cosTheta, 0) * half
 
-  if unit ~= unit then
-    unit = Vector3.zero
-  end
-
-  if math.abs(unit.Y) > 0.999 then
-    if normal == Enum.NormalId.Left or normal == Enum.NormalId.Right then
-      up = cframe.RightVector
-    else
-      up = cframe.LookVector
-    end
-  end
-
+  local up = if tangent.Magnitude > 0.001 then tangent.Unit else Vector3.new(1, 0, 0)
   local res = cf * CFrame.Angles(0, math.pi, 0) * CFrame.new(pos) * CFrame.lookAt(Vector3.zero, pos, up)
 
   debug.profileend()
