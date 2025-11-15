@@ -4,14 +4,14 @@ local utility = require("../mod/utility")
 local spin = {}
 
 function spin.emit(ref: Model, scope: utility.scope)
-  local rotation = utility.getAttribute(ref, "SpinRotation", vector.zero, true) * utility.DEG_TO_RAD
-
-  local scaleStart = utility.getAttribute(ref, "Scale_Start", 1, true)
-  local scaleEnd = utility.getAttribute(ref, "Scale_End", 1, true)
-
-  if rotation == vector.zero and scaleStart == 1 and scaleEnd == 1 then
+  if utility.isSpinModelStatic(ref) then
     return
   end
+
+  local rotation = utility.getAttribute(ref, "SpinRotation", vector.zero) * utility.DEG_TO_RAD
+
+  local scaleStart = utility.getAttribute(ref, "Scale_Start", 1)
+  local scaleEnd = utility.getAttribute(ref, "Scale_End", 1)
 
   local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
 

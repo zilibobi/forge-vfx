@@ -837,14 +837,7 @@ function api.emit(arg0, ...)
 
         local anc = obj:FindFirstAncestorOfClass("Model")
 
-        if
-          anc
-          and (
-            anc:GetAttribute("SpinRotation") ~= vector.zero
-            or anc:GetAttribute("Scale_Start") ~= 1
-            or anc:GetAttribute("Scale_End") ~= 1
-          )
-        then
+        if anc and not utility.isSpinModelStatic(anc) then
           continue
         end
 

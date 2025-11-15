@@ -177,6 +177,13 @@ function utility.isMeshVFX(obj: Instance)
     and obj.End:IsA("BasePart")
 end
 
+function utility.isSpinModelStatic(model: Model)
+  return utility.getAttribute(model, "SpinRotation", vector.zero, true) == vector.zero
+    and utility.getAttribute(model, "Scale_Start", 1, true) == 1
+    and utility.getAttribute(model, "Scale_End", 1, true) == 1
+    and (utility.getAttribute(model, "SyncPosition", false, true) == false)
+end
+
 function utility.cleanupScope(scope: { unknown })
   for _, v in scope do
     local t = typeof(v)
