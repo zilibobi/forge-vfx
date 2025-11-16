@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local CollectionService = game:GetService("CollectionService")
 
@@ -330,9 +331,38 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEm
 
           local finished = false
 
+          local function getOriginCFrame()
+            local ocf = originCFrame
+
+            if parent:IsA("BasePart") then
+              ocf = parent.CFrame
+            elseif parent:IsA("Attachment") then
+              ocf = parent.WorldCFrame
+            end
+
+            return ocf
+          end
+
           local function onFinish()
             if finished then
               return
+            end
+
+            if sync then
+              local initOrigin = getOriginCFrame()
+              local initPartPos = objAbstr.CFrame
+
+              local function updatePos()
+                objAbstr.CFrame = getOriginCFrame() * initOrigin:ToObjectSpace(initPartPos)
+              end
+
+              local id = utility.getRanomId()
+
+              RunService:BindToRenderStep(id, utility.RENDER_PRIORITY + scope.depth, updatePos)
+
+              table.insert(scope, function()
+                RunService:UnbindFromRenderStep(id)
+              end)
             end
 
             finished = true
@@ -366,18 +396,6 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEm
             end
 
             return false
-          end
-
-          local function getOriginCFrame()
-            local ocf = originCFrame
-
-            if parent:IsA("BasePart") then
-              ocf = parent.CFrame
-            elseif parent:IsA("Attachment") then
-              ocf = parent.WorldCFrame
-            end
-
-            return ocf
           end
 
           local didHit = false
