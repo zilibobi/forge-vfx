@@ -22,7 +22,7 @@ function debris.init(cache)
 
   part_cache = cache
 
-  if RunService:IsStudio() and script:FindFirstAncestorOfClass("Plugin") then
+  if utility.PLUGIN_CONTEXT then
     physicsStepper = RunService.RenderStepped:Connect(function(deltaTime)
       if #physicsParts == 0 then
         return
