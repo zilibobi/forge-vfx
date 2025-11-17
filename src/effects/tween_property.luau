@@ -1,6 +1,6 @@
-local lerp = require("../mod/lerp")
-local tween = require("../mod/tween")
-local utility = require("../mod/utility")
+local lerp = require("@mod/lerp")
+local tween = require("@mod/tween")
+local utility = require("@mod/utility")
 
 local rng = Random.new()
 

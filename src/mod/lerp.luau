@@ -1,4 +1,4 @@
-local Oklab = require("./color/Oklab")
+local Oklab = require("@mod/color/Oklab")
 
 local MAX_KEYPOINTS = 20
 

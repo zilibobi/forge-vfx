@@ -2,13 +2,13 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local CollectionService = game:GetService("CollectionService")
 
-local tween = require("../mod/tween")
-local shape = require("../mod/shape")
-local utility = require("../mod/utility")
+local tween = require("@mod/tween")
+local shape = require("@mod/shape")
+local utility = require("@mod/utility")
 
-local Bezier = require("../obj/Bezier")
-local Promise = require("../pkg/Promise")
-local ObjectCache = require("../obj/ObjectCache")
+local Bezier = require("@obj/Bezier")
+local Promise = require("@pkg/Promise")
+local ObjectCache = require("@obj/ObjectCache")
 
 local drawFuncMap = {
   Box = {

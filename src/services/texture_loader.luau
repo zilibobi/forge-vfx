@@ -1,7 +1,7 @@
 local CollectionService = game:GetService("CollectionService")
 
-local ObjectCache = require(script.Parent.Parent.obj.ObjectCache)
-local utility = require(script.Parent.Parent.mod.utility)
+local ObjectCache = require("@obj/ObjectCache")
+local utility = require("@mod/utility")
 
 local texture_loader = {}
 

@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 
-local utility = require("../mod/utility")
+local utility = require("@mod/utility")
 
 local screen = {}
 

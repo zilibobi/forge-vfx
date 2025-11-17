@@ -1,10 +1,10 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
-local Mesh = require(script.Parent.Parent.effects.mesh)
-local Bezier = require(script.Parent.Parent.effects.bezier)
+local Mesh = require("@vfx/mesh")
+local Bezier = require("@vfx/bezier")
 
-local utility = require(script.Parent.Parent.mod.utility)
+local utility = require("@mod/utility")
 
 local enabled_effects = {}
 

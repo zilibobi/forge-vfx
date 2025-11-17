@@ -1,11 +1,11 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
-local tween = require("../mod/tween")
-local utility = require("../mod/utility")
+local tween = require("@mod/tween")
+local utility = require("@mod/utility")
 
-local Oklab = require("../mod/color/Oklab")
-local Promise = require("../pkg/Promise")
+local Oklab = require("@mod/color/Oklab")
+local Promise = require("@pkg/Promise")
 
 local rng = Random.new()
 

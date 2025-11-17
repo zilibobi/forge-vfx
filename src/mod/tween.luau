@@ -1,9 +1,9 @@
 local RunService = game:GetService("RunService")
 
-local logger = require("./logger")
-local utility = require("./utility")
+local logger = require("@mod/logger")
+local utility = require("@mod/utility")
 
-local Bezier = require("../obj/Bezier")
+local Bezier = require("@obj/Bezier")
 
 local tween = {}
 

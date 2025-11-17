@@ -1,6 +1,6 @@
-local ObjectCache = require(script.Parent.Parent.obj.ObjectCache)
+local ObjectCache = require("@obj/ObjectCache")
 
-local utility = require(script.Parent.Parent.mod.utility)
+local utility = require("@mod/utility")
 
 local caches = {}
 

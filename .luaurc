@@ -1,0 +1,9 @@
+{
+  "aliases": {
+    "pkg": "./pkg",
+    "mod": "./src/mod",
+    "obj": "./src/obj",
+    "vfx": "./src/effects",
+    "srv": "./src/services"
+  }
+}

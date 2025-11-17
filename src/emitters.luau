@@ -1,17 +1,17 @@
-local Beam = require(script.Parent.effects.beam)
-local Spin = require(script.Parent.effects.spin)
-local Mesh = require(script.Parent.effects.mesh)
-local Bezier = require(script.Parent.effects.bezier)
-local Particle = require(script.Parent.effects.particle)
-local CameraShake = require(script.Parent.effects.camera_shake)
-local TweenProperty = require(script.Parent.effects.tween_property)
-local ShockwaveRing = require(script.Parent.effects.shockwave_ring)
-local ShockwaveLine = require(script.Parent.effects.shockwave_line)
-local ShockwaveDebris = require(script.Parent.effects.shockwave_debris)
+local Beam = require("@vfx/beam")
+local Spin = require("@vfx/spin")
+local Mesh = require("@vfx/mesh")
+local Bezier = require("@vfx/bezier")
+local Particle = require("@vfx/particle")
+local CameraShake = require("@vfx/camera_shake")
+local TweenProperty = require("@vfx/tween_property")
+local ShockwaveRing = require("@vfx/shockwave_ring")
+local ShockwaveLine = require("@vfx/shockwave_line")
+local ShockwaveDebris = require("@vfx/shockwave_debris")
 
-local utility = require(script.Parent.mod.utility)
+local utility = require("@mod/utility")
 
-local Promise = require(script.Parent.pkg.Promise)
+local Promise = require("@pkg/Promise")
 
 local emitters = {}
 

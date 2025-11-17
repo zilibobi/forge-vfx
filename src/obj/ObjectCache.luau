@@ -1,4 +1,4 @@
-local utility = require("../mod/utility")
+local utility = require("@mod/utility")
 
 local RECYCLE_INTERVAL = 15
 

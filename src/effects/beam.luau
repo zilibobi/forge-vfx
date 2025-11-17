@@ -1,5 +1,5 @@
-local tween = require("../mod/tween")
-local utility = require("../mod/utility")
+local tween = require("@mod/tween")
+local utility = require("@mod/utility")
 
 local rng = Random.new()
 

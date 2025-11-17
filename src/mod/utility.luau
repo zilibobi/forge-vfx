@@ -1,7 +1,7 @@
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
 
-local logger = require("./logger")
+local logger = require("@mod/logger")
 
 export type scope = {
   depth: number,

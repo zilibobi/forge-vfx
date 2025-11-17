@@ -1,12 +1,12 @@
 local CollectionService = game:GetService("CollectionService")
 
-local tween = require("../mod/tween")
-local logger = require("../mod/logger")
-local utility = require("../mod/utility")
+local tween = require("@mod/tween")
+local logger = require("@mod/logger")
+local utility = require("@mod/utility")
 
-local Bezier = require("../obj/Bezier")
-local Promise = require("../pkg/Promise")
-local ObjectCache = require("../obj/ObjectCache")
+local Bezier = require("@obj/Bezier")
+local Promise = require("@pkg/Promise")
+local ObjectCache = require("@obj/ObjectCache")
 
 local rng = Random.new()
 

@@ -1,9 +1,9 @@
 local RunService = game:GetService("RunService")
 
-local tween = require("../mod/tween")
-local utility = require("../mod/utility")
+local tween = require("@mod/tween")
+local utility = require("@mod/utility")
 
-local Shake = require("../pkg/Shake")
+local Shake = require("@pkg/Shake")
 
 local activeShakes = {}
 local totalShakeCF = CFrame.identity

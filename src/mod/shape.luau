@@ -1,6 +1,6 @@
 --!native
 --!optimize 2
-local utility = require("./utility")
+local utility = require("@mod/utility")
 
 local shape = {}
 

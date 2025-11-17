@@ -86,22 +86,22 @@ Copyright (c) 2025 zilibobi
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
-local logger = require(script.mod.logger)
-local utility = require(script.mod.utility)
+local logger = require("@mod/logger")
+local utility = require("@mod/utility")
 
-local Bezier = require(script.effects.bezier)
-local Screen = require(script.effects.screen)
-local CameraShake = require(script.effects.camera_shake)
-local ShockwaveRing = require(script.effects.shockwave_ring)
-local ShockwaveLine = require(script.effects.shockwave_line)
-local ShockwaveDebris = require(script.effects.shockwave_debris)
+local Bezier = require("@vfx/bezier")
+local Screen = require("@vfx/screen")
+local CameraShake = require("@vfx/camera_shake")
+local ShockwaveRing = require("@vfx/shockwave_ring")
+local ShockwaveLine = require("@vfx/shockwave_line")
+local ShockwaveDebris = require("@vfx/shockwave_debris")
 
-local Promise = require(script.pkg.Promise)
+local Promise = require("@pkg/Promise")
 
-local caches = require(script.services.caches)
-local emitters = require(script.emitters)
-local texture_loader = require(script.services.texture_loader)
-local enabled_effects = require(script.services.enabled_effects)
+local caches = require("@srv/caches")
+local emitters = require("@self/emitters")
+local texture_loader = require("@srv/texture_loader")
+local enabled_effects = require("@srv/enabled_effects")
 
 local PluginContext = utility.PLUGIN_CONTEXT
 local ServerContext = utility.SERVER_CONTEXT
