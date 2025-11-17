@@ -448,6 +448,45 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
   return decals, flipbooks, fromToMap
 end
 
+function utility.assembleMeshVFX(start: BasePart, scope: scope, shared_part_cache: any)
+  local id = utility.getRandomId()
+
+  if start:IsA("Part") then
+    local objAbstr = shared_part_cache:get(id)
+    objAbstr.CFrame = start.CFrame
+
+    local obj = objAbstr._getReal()
+
+    utility.copyProperties(start, obj, utility.COPY_PART_PROPERTIES)
+    utility.copyProperties(start, obj, utility.COPY_EXTENDED_PART_PROPERTIES)
+
+    local clone = start:Clone()
+
+    for _, child in clone:GetChildren() do
+      child.Parent = obj
+    end
+
+    clone:Destroy()
+
+    table.insert(scope, function()
+      shared_part_cache:free(id)
+    end)
+
+    return objAbstr
+  else
+    local clone = start:Clone()
+    clone.Archivable = false
+    clone.Locked = true
+    clone.Parent = workspace.Terrain
+
+    clone:AddTag(utility.CLEANUP_TAG)
+
+    table.insert(scope, clone)
+
+    return clone
+  end
+end
+
 function utility.getBezierPoints(root: Attachment, metadata: boolean)
   local objs = root:GetChildren()
 

@@ -89,20 +89,19 @@ local CollectionService = game:GetService("CollectionService")
 local logger = require(script.mod.logger)
 local utility = require(script.mod.utility)
 
-local Beam = require(script.effects.beam)
-local Spin = require(script.effects.spin)
-local Mesh = require(script.effects.mesh)
 local Bezier = require(script.effects.bezier)
 local Screen = require(script.effects.screen)
-local Particle = require(script.effects.particle)
 local CameraShake = require(script.effects.camera_shake)
-local TweenProperty = require(script.effects.tween_property)
 local ShockwaveRing = require(script.effects.shockwave_ring)
 local ShockwaveLine = require(script.effects.shockwave_line)
 local ShockwaveDebris = require(script.effects.shockwave_debris)
 
 local Promise = require(script.pkg.Promise)
-local ObjectCache = require(script.obj.ObjectCache)
+
+local caches = require(script.services.caches)
+local emitters = require(script.emitters)
+local texture_loader = require(script.services.texture_loader)
+local enabled_effects = require(script.services.enabled_effects)
 
 local PluginContext = utility.PLUGIN_CONTEXT
 local ServerContext = utility.SERVER_CONTEXT
@@ -113,49 +112,6 @@ local api = {}
 
 api.scope = {}
 api.setup = false
-
-local function assembleMeshVFX(start: BasePart, scope: utility.scope)
-  if not api.setup then
-    logger.error("API not initialized")
-  end
-
-  local id = utility.getRandomId()
-
-  if start:IsA("Part") then
-    local objAbstr = api.caches.shared_part:get(id)
-    objAbstr.CFrame = start.CFrame
-
-    local obj = objAbstr._getReal()
-
-    utility.copyProperties(start, obj, utility.COPY_PART_PROPERTIES)
-    utility.copyProperties(start, obj, utility.COPY_EXTENDED_PART_PROPERTIES)
-
-    local clone = start:Clone()
-
-    for _, child in clone:GetChildren() do
-      child.Parent = obj
-    end
-
-    clone:Destroy()
-
-    table.insert(scope, function()
-      api.caches.shared_part:free(id)
-    end)
-
-    return objAbstr
-  else
-    local clone = start:Clone()
-    clone.Archivable = false
-    clone.Locked = true
-    clone.Parent = workspace.Terrain
-
-    clone:AddTag(utility.CLEANUP_TAG)
-
-    table.insert(scope, clone)
-
-    return clone
-  end
-end
 
 function api.init(params: params?)
   if api.setup then
@@ -198,368 +154,17 @@ function api.init(params: params?)
 
   shared.vfx = api
 
-  local shared_part_cache
+  api.caches = caches.init(api.scope)
 
-  do
-    local template = Instance.new("Part")
-    template.Transparency = 1
-    template.Anchored = true
-    template.CanCollide = false
-    template.CanQuery = false
-    template.Locked = true
-
-    local parent = Instance.new("Folder")
-    parent.Name = "DO_NOT_REMOVE_ForgeSharedPartCache"
-    parent.Archivable = false
-    parent.Parent = workspace.Terrain
-
-    utility.protectParent(api.scope, parent)
-
-    shared_part_cache = ObjectCache.new(template, parent, {
-      size = 150,
-      on_free = function(item)
-        local part = item.value
-
-        part.Transparency = 1
-
-        part.Anchored = true
-        part.CanQuery = false
-        part.CanCollide = false
-
-        part.CollisionGroup = "ForgeMouseIgnore"
-
-        part.AssemblyLinearVelocity = Vector3.zero
-        part.AssemblyAngularVelocity = Vector3.zero
-
-        -- this is probably not very good for performance lol
-        -- but I don't think there's currently a more reasonable
-        -- way of recycling parts
-        part:ClearAllChildren()
-      end,
-    })
-  end
-
-  api.caches = {
-    shared_part = shared_part_cache,
-  }
-
-  table.insert(api.scope, function()
-    shared_part_cache:destroy()
-  end)
+  texture_loader.init(api.scope)
+  enabled_effects.init(api.scope, api.caches.shared_part)
 
   CameraShake.init()
 
-  Bezier.init(shared_part_cache)
-  ShockwaveRing.init(shared_part_cache)
-  ShockwaveLine.init(shared_part_cache)
-  ShockwaveDebris.init(shared_part_cache)
-
-  do
-    local template = Instance.new("Decal")
-
-    local parent = Instance.new("Part")
-    parent.Name = "DO_NOT_REMOVE_ForgeTextureCache"
-    parent.Transparency = 1
-    parent.Size = Vector3.zero
-    parent.Archivable = false
-    parent.Anchored = true
-    parent.CanCollide = false
-    parent.CanQuery = false
-    parent.Locked = true
-    parent.Parent = workspace.Terrain
-
-    utility.protectParent(api.scope, parent)
-
-    local texture_cache = ObjectCache.new(template, parent, {
-      size = 120 * 3,
-      on_free = function(item)
-        item.value.Texture = ""
-      end,
-    })
-
-    local preloadScopes = {}
-
-    local function loadTextures(ref: Instance)
-      if ref:IsDescendantOf(workspace.Terrain) then
-        return
-      end
-
-      if utility.isMeshVFX(ref) then
-        local obj = ref:FindFirstChild("Start")
-
-        if not obj or not obj:IsA("BasePart") then
-          return
-        end
-
-        local scope = {}
-        local snapshotScope = {}
-
-        table.insert(scope, snapshotScope)
-
-        local function refresh()
-          utility.cleanupScope(snapshotScope)
-
-          local decals, flipbooks = utility.getMeshDecals(ref, obj)
-
-          local function add(src: Decal | string)
-            local tex = typeof(src) == "Instance" and src.Texture or src
-
-            if tex == "" then
-              return
-            end
-
-            local d = texture_cache:get(tex)
-            d.Texture = tex
-
-            table.insert(snapshotScope, function()
-              texture_cache:free(tex)
-            end)
-          end
-
-          for _, d in decals do
-            add(d)
-          end
-
-          for v, list in flipbooks do
-            local temp = false
-
-            if PluginContext then
-              for _, tag in CollectionService:GetTags(v) do
-                if tag:match("^_local_flipbook_") then
-                  temp = true
-                  break
-                end
-              end
-            end
-
-            for _, id in list do
-              add(`{temp and "rbxtemp://" or "rbxassetid://"}{id}`)
-            end
-          end
-        end
-
-        refresh()
-
-        if PluginContext then
-          local run = utility.reboundfn(1, refresh)
-
-          table.insert(scope, obj.DescendantAdded:Connect(run))
-          table.insert(scope, obj.DescendantRemoving:Connect(run))
-        end
-
-        preloadScopes[ref] = scope
-      else
-        local scope = {}
-        local snapshotScope = {}
-
-        table.insert(scope, snapshotScope)
-
-        local function refresh()
-          utility.cleanupScope(snapshotScope)
-
-          local function check(obj: Instance)
-            if not obj:IsA("ParticleEmitter") then
-              return
-            end
-
-            local tex = obj.Texture
-
-            if tex == "" then
-              return
-            end
-
-            local d = texture_cache:get(tex)
-            d.Texture = tex
-
-            table.insert(snapshotScope, function()
-              texture_cache:free(tex)
-            end)
-          end
-
-          check(ref)
-
-          for _, obj in ref:GetDescendants() do
-            check(obj)
-          end
-        end
-
-        refresh()
-
-        if PluginContext then
-          local run = utility.reboundfn(1, refresh)
-
-          table.insert(scope, ref.DescendantAdded:Connect(run))
-          table.insert(scope, ref.DescendantRemoving:Connect(run))
-        end
-
-        preloadScopes[ref] = scope
-      end
-    end
-
-    for _, ref in CollectionService:GetTagged(utility.TEXTURE_LOAD_TAG) do
-      loadTextures(ref)
-    end
-
-    CollectionService:GetInstanceAddedSignal(utility.TEXTURE_LOAD_TAG):Connect(loadTextures)
-    CollectionService:GetInstanceRemovedSignal(utility.TEXTURE_LOAD_TAG):Connect(function(ref)
-      local scope = preloadScopes[ref]
-
-      if scope then
-        utility.cleanupScope(scope)
-        preloadScopes[ref] = nil
-      end
-    end)
-
-    table.insert(api.scope, function()
-      texture_cache:destroy()
-
-      for _, scope in preloadScopes do
-        utility.cleanupScope(scope)
-      end
-    end)
-  end
-
-  do
-    local enabledScopes = {}
-
-    local function removeEnabledEffect(obj: Instance)
-      local scope = enabledScopes[obj]
-
-      if scope then
-        utility.cleanupScope(scope)
-      end
-
-      enabledScopes[obj] = nil
-    end
-
-    local function addEnabledEffect(obj: Instance)
-      local isMesh = utility.isMeshVFX(obj)
-      local isBezier = obj:HasTag(utility.BEZIER_TAG)
-
-      if not isMesh and not isBezier then
-        return
-      end
-
-      local scope = {}
-      local tempScope = {}
-
-      table.insert(scope, tempScope)
-
-      enabledScopes[obj] = scope
-
-      table.insert(
-        scope,
-        obj.AncestryChanged:Connect(function()
-          if obj:IsDescendantOf(workspace) or (obj.Parent and obj.Parent:HasTag("AllowEmitting")) then
-            if not enabledScopes[obj] then
-              addEnabledEffect(obj)
-            end
-          else
-            removeEnabledEffect(obj)
-          end
-        end)
-      )
-
-      if
-        not obj:IsDescendantOf(workspace) and (if obj.Parent then not obj.Parent:HasTag("AllowEmitting") else false)
-      then
-        return
-      end
-
-      local function onEnabled()
-        local enabled = utility.getAttribute(obj, "Enabled", true)
-
-        if enabled then
-          local last = 0
-
-          table.insert(
-            tempScope,
-            RunService.RenderStepped:Connect(function()
-              local rate = utility.getAttribute(obj, "Rate", 5)
-              local speed = obj:GetAttribute("SpeedOverride") or 1
-
-              if speed == 0 then
-                return
-              end
-
-              if os.clock() - last <= (1 / rate) / speed then
-                return
-              end
-
-              local emitScope = {}
-              emitScope.depth = 0
-
-              if isMesh then
-                local start = obj:FindFirstChild("Start")
-
-                if not start then
-                  obj:RemoveTag(utility.ENABLED_VFX_TAG)
-                  return
-                end
-
-                last = os.clock()
-
-                for i = 1, utility.getAttribute(obj, "EmitCount", 1) do
-                  utility.try(
-                    `failed to emit mesh '{obj:GetFullName()}' with error: %s`,
-                    Mesh.emit,
-                    obj,
-                    assembleMeshVFX(start, emitScope),
-                    emitScope,
-                    1,
-                    true
-                  )
-                end
-              elseif isBezier then
-                local part = obj:FindFirstChildOfClass("Part")
-
-                if not part then
-                  return
-                end
-
-                last = os.clock()
-
-                local clone = part:Clone()
-                clone.Locked = true
-
-                table.insert(emitScope, clone)
-
-                utility.try(
-                  `failed to emit bezier '{obj:GetFullName()}' with error: %s`,
-                  Bezier.emit,
-                  obj,
-                  clone,
-                  emitScope,
-                  true
-                )
-              end
-
-              utility.cleanupScope(emitScope)
-            end)
-          )
-        else
-          utility.cleanupScope(tempScope)
-        end
-      end
-
-      table.insert(scope, obj:GetAttributeChangedSignal("Enabled"):Connect(onEnabled))
-
-      onEnabled()
-    end
-
-    for _, obj in CollectionService:GetTagged(utility.ENABLED_VFX_TAG) do
-      addEnabledEffect(obj)
-    end
-
-    CollectionService:GetInstanceAddedSignal(utility.ENABLED_VFX_TAG):Connect(addEnabledEffect)
-    CollectionService:GetInstanceRemovedSignal(utility.ENABLED_VFX_TAG):Connect(removeEnabledEffect)
-
-    table.insert(api.scope, function()
-      for _, scope in enabledScopes do
-        utility.cleanupScope(scope)
-      end
-    end)
-  end
+  Bezier.init(api.caches.shared_part)
+  ShockwaveRing.init(api.caches.shared_part)
+  ShockwaveLine.init(api.caches.shared_part)
+  ShockwaveDebris.init(api.caches.shared_part)
 end
 
 function api.deinit()
@@ -590,7 +195,7 @@ function api.deinit()
   end
 end
 
-function api.emit(arg0, ...)
+local function fullEmit(scale: number, depth: number, ...: Instance)
   if not api.setup then
     logger.error("not initialized")
   end
@@ -606,203 +211,11 @@ function api.emit(arg0, ...)
         local scope = {}
         scope.depth = depth
 
-        if obj:IsA("ParticleEmitter") then
-          if not obj:IsDescendantOf(workspace) then
-            local parent, ancestor = utility.cloneParticleAncestry(obj, sharedRefMap)
+        local shouldCleanup =
+          emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
 
-            if not parent then
-              return
-            end
-
-            table.insert(scope, ancestor)
-
-            local clone = obj:Clone()
-            clone.Archivable = false
-            clone.Parent = parent
-
-            if not sharedUncMap[ancestor] then
-              ancestor.Parent = workspace.Terrain
-            end
-
-            if not sharedUncMap[ancestor] then
-              sharedUncMap[ancestor] = 1
-            else
-              sharedUncMap[ancestor] += 1
-            end
-
-            utility.try(
-              `failed to emit particle '{obj:GetFullName()}' with error: %s`,
-              Particle.emit,
-              obj,
-              clone,
-              scope,
-              legacyScale
-            )
-
-            sharedUncMap[ancestor] -= 1
-
-            if sharedUncMap[ancestor] <= 0 then
-              utility.cleanupScope(scope)
-            end
-          else
-            utility.try(
-              `failed to emit particle '{obj:GetFullName()}' with error: %s`,
-              Particle.emit,
-              obj,
-              obj,
-              scope,
-              legacyScale
-            )
-
-            utility.cleanupScope(scope)
-          end
-        elseif obj:IsA("Beam") then
-          local clone = obj:Clone()
-          clone.Archivable = false
-          clone.Parent = workspace.Terrain
-
-          table.insert(scope, clone)
-
-          utility.try(
-            `failed to emit beam '{obj:GetFullName()}' with error: %s`,
-            Beam.emit,
-            obj,
-            clone,
-            scope,
-            legacyScale
-          )
+        if shouldCleanup then
           utility.cleanupScope(scope)
-        elseif obj:IsA("Trail") then
-          obj.Enabled = true
-        elseif obj:HasTag(utility.BEZIER_TAG) then
-          local part = obj:FindFirstChildOfClass("Part")
-
-          if not part then
-            return
-          end
-
-          if obj:GetAttribute("Enabled") then
-            obj:SetAttribute("Enabled", false)
-          end
-
-          local clone = part:Clone()
-          clone.Locked = true
-
-          table.insert(scope, clone)
-
-          utility.try(`failed to emit bezier '{obj:GetFullName()}' with error: %s`, Bezier.emit, obj, clone, scope)
-          utility.cleanupScope(scope)
-        elseif utility.isMeshVFX(obj) then
-          local start = obj:FindFirstChild("Start")
-
-          if not start then
-            return
-          end
-
-          if obj:GetAttribute("Enabled") then
-            obj:SetAttribute("Enabled", false)
-          end
-
-          local tasks = {}
-
-          for i = 1, utility.getAttribute(obj, "EmitCount", 1) do
-            table.insert(
-              tasks,
-              Promise.new(function(resolve)
-                utility.try(
-                  `failed to emit mesh '{obj:GetFullName()}' with error: %s`,
-                  Mesh.emit,
-                  obj,
-                  assembleMeshVFX(start, scope),
-                  scope,
-                  legacyScale
-                )
-
-                resolve()
-              end)
-            )
-          end
-
-          Promise.all(tasks):await()
-
-          utility.cleanupScope(scope)
-        elseif obj:IsA("Model") then
-          if utility.lock(obj) then
-            return
-          end
-
-          -- fix. the. lag.
-          -- https://devforum.roblox.com/t/selecting-a-model-moved-using-pivotto-on-every-frame-causes-severe-lag/3775544
-          utility.try(`failed to emit spinning model '{obj:GetFullName()}' with error: %s`, Spin.emit, obj, scope)
-          utility.cleanupScope(scope)
-
-          utility.unlock(obj)
-        elseif obj:IsA("RayValue") then
-          if obj:HasTag(utility.SCREENSHAKE_TAG) then
-            utility.try(
-              `failed to emit camera shake '{obj:GetFullName()}' with error: %s`,
-              CameraShake.emit,
-              obj,
-              scope
-            )
-
-            utility.cleanupScope(scope)
-          else
-            if not obj.Parent or utility.lock(obj) then
-              return
-            end
-
-            utility.try(
-              `failed to emit tween property '{obj:GetFullName()}' with error: %s`,
-              TweenProperty.emit,
-              obj.Parent,
-              obj,
-              scope
-            )
-
-            utility.unlock(obj)
-            utility.cleanupScope(scope)
-          end
-        end
-
-        if obj:IsA("Part") then
-          local att = utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
-
-          if att then
-            local name = obj.Parent.Name
-
-            if name == "Rings" then
-              utility.try(
-                `failed to emit shockwave ring '{obj:GetFullName()}' with error: %s`,
-                ShockwaveRing.emit,
-                att,
-                obj,
-                scope
-              )
-
-              utility.cleanupScope(scope)
-            elseif name == "Debris" then
-              utility.try(
-                `failed to emit shockwave debris '{obj:GetFullName()}' with error: %s`,
-                ShockwaveDebris.emit,
-                att,
-                obj,
-                scope
-              )
-
-              utility.cleanupScope(scope)
-            elseif name == "Lines" then
-              utility.try(
-                `failed to emit shockwave line '{obj:GetFullName()}' with error: %s`,
-                ShockwaveLine.emit,
-                att,
-                obj,
-                scope
-              )
-
-              utility.cleanupScope(scope)
-            end
-          end
         end
       end
 
@@ -812,13 +225,6 @@ function api.emit(arg0, ...)
   end
 
   local list = { ... }
-
-  if typeof(arg0) ~= "number" then
-    table.insert(list, arg0)
-  else
-    legacyScale = arg0
-  end
-
   local rootPromises = {}
 
   local function emitAll(depth: number, children: { Instance }, promises: {})
@@ -880,13 +286,25 @@ function api.emit(arg0, ...)
     end
   end
 
-  emitAll(0, list, rootPromises)
+  emitAll(depth, list, rootPromises)
 
   local env = {
     Finished = Promise.all(rootPromises),
   }
 
   return env
+end
+
+function api.emit(vfxOrScale: number | Instance, ...: Instance)
+  if typeof(vfxOrScale) ~= "number" then
+    return fullEmit(1, 0, vfxOrScale, ...)
+  else
+    return fullEmit(vfxOrScale, 0, ...)
+  end
+end
+
+function api.emitWithDepth(depth: number, ...: Instance)
+  return fullEmit(1, depth, ...)
 end
 
 return api
