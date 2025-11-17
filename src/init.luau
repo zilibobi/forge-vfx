@@ -22,7 +22,7 @@ distribution of the module immediately.
 
 End of preamble.
 
-VFX Forge Developer License (VFX-DL) Version 1.0
+VFX Forge Developer License (VFX-DL) Version 1.1
 
 Copyright (c) 2025 zilibobi
 
@@ -35,14 +35,15 @@ Copyright (c) 2025 zilibobi
 
 2. Grant of Rights.
    Permission is hereby granted, free of charge, to You to use, reproduce,
-   prepare Derivative Works of, publicly display, publicly perform,
-   sublicense, and distribute the Module, **solely when embedded in the runtime
-   environment of a Roblox Experience** (including playtesting in Roblox Studio),
-   and **not** when loaded by any Roblox Studio plugin or other developer tool,
-   running in any context that has access to API methods or permissions unavailable
-   to runtime scripts within Roblox Experiences. You may distribute the Module or
-   Derivative Work to other developers, provided they use it only within the permitted
-   runtime context described above.
+   prepare Derivative Works of, publicly display, publicly perform, sublicense,
+   and distribute the Module, **solely when embedded in the runtime environment of
+   a Roblox Experience** (including playtesting in Roblox Studio), and **not** when
+   loaded by any Roblox Studio plugin or other developer tool, running in any context
+   that has access to API methods or permissions unavailable to runtime scripts within
+   Roblox Experiences (excluding the Roblox Studio command bar feature, when used for
+   the purpose of viewing finished effects). You may distribute the Module or Derivative
+   Work to other developers, provided they use it only within the permitted runtime
+   context described above.
 
 3. Conditions.
    a. Copyleft.
@@ -103,8 +104,8 @@ local ShockwaveDebris = require(script.effects.shockwave_debris)
 local Promise = require(script.pkg.Promise)
 local ObjectCache = require(script.obj.ObjectCache)
 
-local PluginContext = script:FindFirstAncestorOfClass("Plugin")
-local ServerContext = RunService:IsServer() or PluginContext
+local PluginContext = utility.PLUGIN_CONTEXT
+local ServerContext = utility.SERVER_CONTEXT
 
 type params = {}
 

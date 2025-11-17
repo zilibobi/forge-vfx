@@ -9,6 +9,11 @@ export type scope = {
 
 local utility = {}
 
+utility.PLUGIN_CONTEXT = script:FindFirstAncestorOfClass("Plugin")
+  or (RunService:IsStudio() and not RunService:IsRunning())
+
+utility.SERVER_CONTEXT = RunService:IsServer() or utility.PLUGIN_CONTEXT
+
 utility.DEG_TO_RAD = math.pi / 180
 
 utility.BEZIER_TAG = "BezierParticle"
