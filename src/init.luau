@@ -119,7 +119,7 @@ local function assembleMeshVFX(start: BasePart, scope: utility.scope)
     logger.error("API not initialized")
   end
 
-  local id = utility.getRanomId()
+  local id = utility.getRandomId()
 
   if start:IsA("Part") then
     local objAbstr = api.caches.shared_part:get(id)

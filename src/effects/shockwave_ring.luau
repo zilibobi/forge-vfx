@@ -106,7 +106,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: utility.scope)
     local height = rng:NextNumber(minSize.Y, maxSize.Y)
     local length = rng:NextNumber(minSize.Z, maxSize.Z)
 
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     local part = part_cache:get(id)
 

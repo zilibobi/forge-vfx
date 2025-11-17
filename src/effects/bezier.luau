@@ -356,7 +356,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEm
                 objAbstr.CFrame = getOriginCFrame() * initOrigin:ToObjectSpace(initPartPos)
               end
 
-              local id = utility.getRanomId()
+              local id = utility.getRandomId()
 
               RunService:BindToRenderStep(id, utility.RENDER_PRIORITY + scope.depth, updatePos)
 

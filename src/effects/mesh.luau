@@ -189,7 +189,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: utility.scope, scale: numbe
   updatePos(0)
 
   do
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     RunService:BindToRenderStep(id, utility.RENDER_PRIORITY + scope.depth, updatePos)
 

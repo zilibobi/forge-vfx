@@ -129,7 +129,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: utility.scope)
   for _ = 1, count do
     local iref = #partData ~= 0 and partData[rng:NextInteger(1, #partData)]
 
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     local part = part_cache:get(id)
 

@@ -123,7 +123,7 @@ end
 
 local last_id = 0
 
-function utility.getRanomId()
+function utility.getRandomId()
   last_id += 1
   return tostring(last_id)
 end

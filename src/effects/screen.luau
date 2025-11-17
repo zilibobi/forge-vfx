@@ -44,7 +44,7 @@ function screen.emit(ref: BasePart, scope: utility.scope)
   if not RunService:IsRunning() then
     table.insert(scope, RunService.RenderStepped:Connect(frame))
   else
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     RunService:BindToRenderStep(id, utility.RENDER_PRIORITY + scope.depth, frame)
 

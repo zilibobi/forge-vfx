@@ -69,7 +69,7 @@ function tween.fromParams(
 
     return connection
   else
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     RunService:BindToRenderStep(id, stepAtPriority, step)
 
@@ -126,7 +126,7 @@ function tween.timer(
       connection:Disconnect()
     end
   else
-    local id = utility.getRanomId()
+    local id = utility.getRandomId()
 
     RunService:BindToRenderStep(id, stepAtPriority, step)
 
