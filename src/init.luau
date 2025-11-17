@@ -114,7 +114,7 @@ local api = {}
 api.scope = {}
 api.setup = false
 
-local function assembleMeshVFX(start: BasePart, scope: {})
+local function assembleMeshVFX(start: BasePart, scope: utility.scope)
   if not api.setup then
     logger.error("API not initialized")
   end
@@ -148,6 +148,8 @@ local function assembleMeshVFX(start: BasePart, scope: {})
     clone.Archivable = false
     clone.Locked = true
     clone.Parent = workspace.Terrain
+
+    clone:AddTag(utility.CLEANUP_TAG)
 
     table.insert(scope, clone)
 
@@ -487,12 +489,6 @@ function api.init(params: params?)
               local emitScope = {}
               emitScope.depth = 0
 
-              local function cleanup()
-                utility.cleanupScope(emitScope)
-              end
-
-              table.insert(api.scope, cleanup)
-
               if isMesh then
                 local start = obj:FindFirstChild("Start")
 
@@ -536,12 +532,6 @@ function api.init(params: params?)
                   emitScope,
                   true
                 )
-              end
-
-              local index = table.find(api.scope, cleanup)
-
-              if index then
-                table.remove(api.scope, index)
               end
 
               utility.cleanupScope(emitScope)
@@ -592,6 +582,12 @@ function api.deinit()
   ShockwaveRing.deinit()
   ShockwaveLine.deinit()
   ShockwaveDebris.deinit()
+
+  local cleanupObjects = CollectionService:GetTagged(utility.CLEANUP_TAG)
+
+  for _, obj in cleanupObjects do
+    obj:Destroy()
+  end
 end
 
 function api.emit(arg0, ...)

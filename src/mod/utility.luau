@@ -22,6 +22,8 @@ utility.SCREENSHAKE_TAG = "CameraShake"
 utility.ENABLED_VFX_TAG = "ConstantVFX"
 utility.TEXTURE_LOAD_TAG = "LoadVFXTextures"
 
+utility.CLEANUP_TAG = "__forge__cleanupOnExit"
+
 utility.RENDER_PRIORITY = Enum.RenderPriority.Camera.Value + 1
 
 utility.COLLISION_GROUPS = {
