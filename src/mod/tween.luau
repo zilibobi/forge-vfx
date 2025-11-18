@@ -12,7 +12,7 @@ function tween.fromParams(
   duration: number,
   animator: (alpha: number, deltaTime: number, elapsed: number) -> number?,
   awaitTween: RBXScriptConnection?,
-  onFinish: (() -> ())?,
+  onFinish: ((organic: boolean) -> ())?,
   startAtZero: boolean?,
   stepAtPriority: number?
 )

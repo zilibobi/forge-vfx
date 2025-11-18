@@ -1,12 +1,13 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
+local types = require("@root/types")
 local utility = require("@mod/utility")
 local emitters = require("@root/emitters")
 
 local enabled_effects = {}
 
-function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
+function enabled_effects.init(scope: types.scope, shared_part_cache: any, effects_service: any)
   local enabledScopes = {}
 
   local function removeEnabledEffect(obj: Instance)
@@ -34,15 +35,15 @@ function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
       return
     end
 
-    local tempScope = {}
-    local effectScope = {}
+    local tempScope = {} :: { any }
+    local preEffectScope = {} :: { any }
 
-    table.insert(effectScope, tempScope)
+    table.insert(preEffectScope, tempScope)
 
-    enabledScopes[obj] = effectScope
+    enabledScopes[obj] = preEffectScope
 
     table.insert(
-      effectScope,
+      preEffectScope,
       obj.AncestryChanged:Connect(function()
         if obj:IsDescendantOf(workspace) or (obj.Parent and obj.Parent:HasTag("AllowEmitting")) then
           if not enabledScopes[obj] then
@@ -82,6 +83,7 @@ function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
 
             local emitScope = {}
             emitScope.depth = 0
+            emitScope.effects = effects_service
 
             effectConfig.emit(obj, emitScope, shared_part_cache)
 
@@ -93,7 +95,7 @@ function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
       end
     end
 
-    table.insert(effectScope, obj:GetAttributeChangedSignal("Enabled"):Connect(onEnabled))
+    table.insert(preEffectScope, obj:GetAttributeChangedSignal("Enabled"):Connect(onEnabled))
 
     onEnabled()
   end

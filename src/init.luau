@@ -98,6 +98,7 @@ local ShockwaveDebris = require("@vfx/shockwave_debris")
 local Promise = require("@pkg/Promise")
 
 local caches = require("@srv/caches")
+local effects = require("@srv/effects")
 local emitters = require("@self/emitters")
 local texture_loader = require("@srv/texture_loader")
 local enabled_effects = require("@srv/enabled_effects")
@@ -151,13 +152,17 @@ function api.init(params: params?)
     return
   end
 
-  shared.vfx = api
-
   api.caches = caches.init(api.scope)
 
-  texture_loader.init(api.scope)
-  enabled_effects.init(api.scope, api.caches.shared_part)
+  shared.vfx = api
 
+  -- init services
+  effects.init(api)
+
+  texture_loader.init(api.scope)
+  enabled_effects.init(api.scope, api.caches.shared_part, effects)
+
+  -- init effects
   CameraShake.init()
 
   Bezier.init(api.caches.shared_part)
@@ -180,6 +185,8 @@ function api.deinit()
   end
 
   utility.cleanupScope(api.scope)
+
+  effects.deinit()
 
   Bezier.deinit()
   CameraShake.deinit()
@@ -228,6 +235,7 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
 
         local scope = {}
         scope.depth = depth
+        scope.effects = effects
 
         local await = emitters.screen(obj, scope)
 
@@ -257,6 +265,7 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
           Promise.new(function(resolve)
             local scope = {}
             scope.depth = depth
+            scope.effects = effects
 
             emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
             utility.cleanupScope(scope)

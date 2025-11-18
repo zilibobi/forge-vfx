@@ -4,6 +4,7 @@
     "mod": "./src/mod",
     "obj": "./src/obj",
     "vfx": "./src/effects",
-    "srv": "./src/services"
+    "srv": "./src/services",
+    "root": "./src"
   }
 }

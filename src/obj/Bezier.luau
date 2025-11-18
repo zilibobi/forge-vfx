@@ -1,3 +1,4 @@
+--!nocheck
 type n = vector | number
 
 local NEWTON_MIN_TOL = 0.001

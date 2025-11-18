@@ -2,6 +2,7 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Promise = require("@pkg/Promise")
@@ -48,7 +49,7 @@ function debris.deinit()
   table.clear(physicsParts)
 end
 
-function debris.emit(origin: Attachment, ref: Part, scope: utility.scope)
+function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
   if not part_cache then
     return
   end
@@ -148,6 +149,8 @@ function debris.emit(origin: Attachment, ref: Part, scope: utility.scope)
       clone:Destroy()
     end
 
+    local emitOnFinish = scope.effects.prepareEmitOnFinish(realPart, scope)
+
     part.Anchored = false
     part.CanCollide = true
 
@@ -203,10 +206,8 @@ function debris.emit(origin: Attachment, ref: Part, scope: utility.scope)
 
     part:ApplyAngularImpulse(part.AssemblyMass * rng:NextUnitVector() * rng:NextNumber(angmag.Min, angmag.Max))
 
-    if shared.vfx and #part:GetChildren() ~= 0 then
-      local env = shared.vfx.emit(part)
-      table.insert(promises, env.Finished)
-    end
+    local env = scope.effects.emitNested(realPart, scope.depth + 1)
+    table.insert(promises, env.Finished)
 
     task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
       local startSize = part.Size
@@ -232,6 +233,9 @@ function debris.emit(origin: Attachment, ref: Part, scope: utility.scope)
       else
         part.Transparency = tpStart
       end
+
+      local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)
+      table.insert(promises, env.Finished)
     end)
   end
 

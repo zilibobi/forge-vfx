@@ -1,4 +1,5 @@
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local rng = Random.new()
@@ -15,7 +16,7 @@ end
 
 local beam = {}
 
-function beam.emit(ref: Beam, obj: Beam, scope: utility.scope, scale: number)
+function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
   local a1, a2, a3, a4 = getLegacyWidths(ref, scale)
 
   local w1 = utility.getAttribute(ref, "Width0_Start", a3)

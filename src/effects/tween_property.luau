@@ -1,12 +1,13 @@
 local lerp = require("@mod/lerp")
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local rng = Random.new()
 
 local prop = {}
 
-function prop.emit(parent: Instance, obj: RayValue, scope: utility.scope)
+function prop.emit(parent: Instance, obj: RayValue, scope: types.scope)
   local property = obj.Name
 
   local emitDelay = utility.getAttribute(obj, "EmitDelay", 0)

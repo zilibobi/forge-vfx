@@ -1,9 +1,11 @@
+--!nolint LocalShadow
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
 local shape = require("@mod/shape")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Bezier = require("@obj/Bezier")
@@ -59,7 +61,7 @@ function bezier.deinit()
   part_cache = nil
 end
 
-function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEmit: boolean?)
+function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit: boolean?)
   local root = ref:FindFirstChild("Points")
 
   if not root or not root:IsA("Attachment") or not part_cache then
@@ -308,17 +310,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEm
             clone:Destroy()
           end
 
-          local emitOnFinish = obj:FindFirstChild("EmitOnFinish")
+          local emitOnFinish = scope.effects.prepareEmitOnFinish(obj, scope)
 
-          if emitOnFinish then
-            emitOnFinish.Parent = nil
-            table.insert(scope, emitOnFinish)
-          end
-
-          if shared.vfx and #obj:GetChildren() ~= 0 then
-            local env = shared.vfx.emit(obj)
-            table.insert(promises, env.Finished)
-          end
+          local env = scope.effects.emitNested(obj, scope.depth + 1)
+          table.insert(promises, env.Finished)
 
           table.insert(scope, function()
             if part_cache then
@@ -367,21 +362,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: utility.scope, mustEm
 
             finished = true
 
-            local children = emitOnFinish and emitOnFinish:GetChildren()
-
-            if children and #children ~= 0 then
-              for _, child in children do
-                child.Parent = obj
-              end
-
-              local env = shared.vfx.emit(table.unpack(children))
-
-              env.Finished:finally(function()
-                resolve()
-              end)
-            else
+            local env = scope.effects.emitOnFinish(emitOnFinish, obj, scope.depth + 1)
+            env.Finished:finally(function()
               resolve()
-            end
+            end)
           end
 
           local function shapecast()

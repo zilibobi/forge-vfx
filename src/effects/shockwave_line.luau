@@ -1,6 +1,7 @@
 local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local logger = require("@mod/logger")
 local utility = require("@mod/utility")
 
@@ -22,7 +23,7 @@ function line.deinit()
   part_cache = nil
 end
 
-function line.emit(origin: Attachment, ref: Part, scope: utility.scope)
+function line.emit(origin: Attachment, ref: Part, scope: types.scope)
   if not part_cache then
     return
   end
@@ -226,6 +227,8 @@ function line.emit(origin: Attachment, ref: Part, scope: utility.scope)
           clone:Destroy()
         end
 
+        local emitOnFinish = scope.effects.prepareEmitOnFinish(realPart, scope)
+
         table.insert(scope, function()
           if part_cache then
             part_cache:free(id)
@@ -287,10 +290,8 @@ function line.emit(origin: Attachment, ref: Part, scope: utility.scope)
           part.Size = size * sizeScaleStart
         end
 
-        if shared.vfx and #part:GetChildren() ~= 0 then
-          local env = shared.vfx.emit(realPart)
-          table.insert(promises, env.Finished)
-        end
+        local env = scope.effects.emitNested(realPart, scope.depth + 1)
+        table.insert(promises, env.Finished)
 
         task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
           if sizeTween then
@@ -343,6 +344,9 @@ function line.emit(origin: Attachment, ref: Part, scope: utility.scope)
           else
             part.Transparency = startTp
           end
+
+          local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)
+          table.insert(promises, env.Finished)
         end)
       end
 

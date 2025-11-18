@@ -33,7 +33,7 @@ export type ObjectCache = typeof(cache) & {
   item_map: { [any]: item },
   unused: { item },
 
-  scope: { unknown },
+  scope: { any },
 }
 
 local function reconcile(a, b)

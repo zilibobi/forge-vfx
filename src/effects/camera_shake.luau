@@ -1,6 +1,7 @@
 local RunService = game:GetService("RunService")
 
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Shake = require("@pkg/Shake")
@@ -85,7 +86,7 @@ function camera_shake.deinit()
   RunService:UnbindFromRenderStep("forge_updateCameraShake")
 end
 
-function camera_shake.emit(ref: RayValue, scope: utility.scope)
+function camera_shake.emit(ref: RayValue, scope: types.scope)
   local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
   local emitDuration = utility.getAttribute(ref, "EmitDuration", 0)
 
@@ -125,7 +126,7 @@ function camera_shake.emit(ref: RayValue, scope: utility.scope)
   end
 
   if speedStart ~= speedEnd then
-    speedTween = tween.fromParams(
+    local speedTween = tween.fromParams(
       utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
       utility.getAttribute(ref, "Speed_Duration", 0.1),
       function(alpha, deltaTime)

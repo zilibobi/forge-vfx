@@ -1,11 +1,13 @@
 local CollectionService = game:GetService("CollectionService")
 
 local ObjectCache = require("@obj/ObjectCache")
+
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local texture_loader = {}
 
-function texture_loader.init(scope: utility.scope)
+function texture_loader.init(scope: types.scope)
   local template = Instance.new("Decal")
 
   local parent = Instance.new("Part")
@@ -50,7 +52,7 @@ function texture_loader.init(scope: utility.scope)
       local function refresh()
         utility.cleanupScope(snapshotScope)
 
-        local decals, flipbooks = utility.getMeshDecals(ref, obj)
+        local decals, flipbooks = utility.getMeshDecals(ref :: Model, obj)
 
         local function add(src: Decal | string)
           local tex = typeof(src) == "Instance" and src.Texture or src
@@ -100,8 +102,8 @@ function texture_loader.init(scope: utility.scope)
 
       preloadScopes[ref] = loadScope
     else
-      local loadScope = {}
-      local snapshotScope = {}
+      local loadScope = {} :: { any }
+      local snapshotScope = {} :: { any }
 
       table.insert(loadScope, snapshotScope)
 

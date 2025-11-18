@@ -1,10 +1,11 @@
 local RunService = game:GetService("RunService")
 
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local screen = {}
 
-function screen.emit(ref: BasePart, scope: utility.scope)
+function screen.emit(ref: BasePart, scope: types.scope)
   if not ref:GetAttribute("Enabled") then
     return
   end

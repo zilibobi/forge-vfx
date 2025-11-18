@@ -1,6 +1,7 @@
 local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Promise = require("@pkg/Promise")
@@ -20,7 +21,7 @@ function ring.deinit()
   part_cache = nil
 end
 
-function ring.emit(origin: Attachment, ref: Part, scope: utility.scope)
+function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
   if not part_cache then
     return
   end
@@ -125,6 +126,8 @@ function ring.emit(origin: Attachment, ref: Part, scope: utility.scope)
       clone:Destroy()
     end
 
+    local emitOnFinish = scope.effects.prepareEmitOnFinish(part, scope)
+
     table.insert(scope, function()
       if part_cache then
         part_cache:free(id)
@@ -184,10 +187,8 @@ function ring.emit(origin: Attachment, ref: Part, scope: utility.scope)
       part.Size = size * sizeScaleStart
     end
 
-    if shared.vfx and #part:GetChildren() ~= 0 then
-      local env = shared.vfx.emit(part)
-      table.insert(promises, env.Finished)
-    end
+    local env = scope.effects.emitNested(part, scope.depth + 1)
+    table.insert(promises, env.Finished)
 
     task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
       if sizeTween then
@@ -240,6 +241,9 @@ function ring.emit(origin: Attachment, ref: Part, scope: utility.scope)
       else
         part.Transparency = startTp
       end
+
+      local env = scope.effects.emitOnFinish(emitOnFinish, part, scope.depth + 1)
+      table.insert(promises, env.Finished)
     end)
   end
 

@@ -10,6 +10,7 @@ local ShockwaveRing = require("@vfx/shockwave_ring")
 local ShockwaveLine = require("@vfx/shockwave_line")
 local ShockwaveDebris = require("@vfx/shockwave_debris")
 
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Promise = require("@pkg/Promise")
@@ -18,7 +19,7 @@ local emitters = {}
 
 function emitters.particle(
   obj: ParticleEmitter,
-  scope: utility.scope,
+  scope: types.scope,
   sharedUncMap: { [Instance]: number },
   sharedRefMap: { [Instance]: Instance },
   legacyScale: number
@@ -68,7 +69,7 @@ function emitters.particle(
   end
 end
 
-function emitters.beam(obj: Beam, scope: utility.scope, legacyScale: number)
+function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
   local clone = obj:Clone()
   clone.Archivable = false
   clone.Parent = workspace.Terrain
@@ -82,7 +83,7 @@ function emitters.trail(obj: Trail)
   obj.Enabled = true
 end
 
-function emitters.bezier(obj: Instance, scope: utility.scope, skipEnabledCheck: boolean?)
+function emitters.bezier(obj: Instance, scope: types.scope, skipEnabledCheck: boolean?)
   local part = obj:FindFirstChildOfClass("Part")
 
   if not part then
@@ -103,7 +104,7 @@ end
 
 function emitters.mesh(
   obj: Instance,
-  scope: utility.scope,
+  scope: types.scope,
   shared_part_cache: any,
   legacyScale: number,
   skipEnabledCheck: boolean?
@@ -141,7 +142,7 @@ function emitters.mesh(
   Promise.all(tasks):await()
 end
 
-function emitters.spin(obj: Model, scope: utility.scope)
+function emitters.spin(obj: Model, scope: types.scope)
   if utility.lock(obj) then
     return
   end
@@ -150,11 +151,11 @@ function emitters.spin(obj: Model, scope: utility.scope)
   utility.unlock(obj)
 end
 
-function emitters.camera_shake(obj: RayValue, scope: utility.scope)
+function emitters.camera_shake(obj: RayValue, scope: types.scope)
   utility.try(`failed to emit camera shake '{obj:GetFullName()}' with error: %s`, CameraShake.emit, obj, scope)
 end
 
-function emitters.tween_property(obj: RayValue, scope: utility.scope)
+function emitters.tween_property(obj: RayValue, scope: types.scope)
   if not obj.Parent or utility.lock(obj) then
     return
   end
@@ -170,15 +171,15 @@ function emitters.tween_property(obj: RayValue, scope: utility.scope)
   utility.unlock(obj)
 end
 
-function emitters.screen(obj: BasePart, scope: utility.scope)
+function emitters.screen(obj: BasePart, scope: types.scope)
   utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
 end
 
-function emitters.shockwave_ring(att: Attachment, obj: Part, scope: utility.scope)
+function emitters.shockwave_ring(att: Attachment, obj: Part, scope: types.scope)
   utility.try(`failed to emit shockwave ring '{obj:GetFullName()}' with error: %s`, ShockwaveRing.emit, att, obj, scope)
 end
 
-function emitters.shockwave_debris(att: Attachment, obj: Part, scope: utility.scope)
+function emitters.shockwave_debris(att: Attachment, obj: Part, scope: types.scope)
   utility.try(
     `failed to emit shockwave debris '{obj:GetFullName()}' with error: %s`,
     ShockwaveDebris.emit,
@@ -188,14 +189,14 @@ function emitters.shockwave_debris(att: Attachment, obj: Part, scope: utility.sc
   )
 end
 
-function emitters.shockwave_line(att: Attachment, obj: Part, scope: utility.scope)
+function emitters.shockwave_line(att: Attachment, obj: Part, scope: types.scope)
   utility.try(`failed to emit shockwave line '{obj:GetFullName()}' with error: %s`, ShockwaveLine.emit, att, obj, scope)
 end
 
 -- Dispatch function to determine which emitter to use and call it
 function emitters.dispatch(
   obj: Instance,
-  scope: utility.scope,
+  scope: types.scope,
   sharedUncMap: { [Instance]: number },
   sharedRefMap: { [Instance]: Instance },
   shared_part_cache: any,
@@ -242,7 +243,7 @@ end
 -- Registry for enabled effects (effects that emit continuously)
 type EnabledEffectConfig = {
   check: (obj: Instance) -> boolean,
-  emit: (obj: Instance, scope: utility.scope, shared_part_cache: any) -> (),
+  emit: (obj: Instance, scope: types.scope, shared_part_cache: any) -> (),
 }
 
 emitters.enabled_registry = {
@@ -250,19 +251,19 @@ emitters.enabled_registry = {
     check = function(obj: Instance)
       return utility.isMeshVFX(obj)
     end,
-    emit = function(obj: Instance, scope: utility.scope, shared_part_cache: any)
+    emit = function(obj: Instance, scope: types.scope, shared_part_cache: any)
       emitters.mesh(obj, scope, shared_part_cache, 1, true)
     end,
-  } :: EnabledEffectConfig,
+  },
 
   bezier = {
     check = function(obj: Instance)
       return obj:HasTag(utility.BEZIER_TAG)
     end,
-    emit = function(obj: Instance, scope: utility.scope, shared_part_cache: any)
+    emit = function(obj: Instance, scope: types.scope, shared_part_cache: any)
       emitters.bezier(obj, scope, true)
     end,
-  } :: EnabledEffectConfig,
+  },
 } :: { [string]: EnabledEffectConfig }
 
 return emitters

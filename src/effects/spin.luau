@@ -1,9 +1,10 @@
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local spin = {}
 
-function spin.emit(ref: Model, scope: utility.scope)
+function spin.emit(ref: Model, scope: types.scope)
   if utility.isSpinModelStatic(ref) then
     return
   end

@@ -1,7 +1,9 @@
+--!nolint LocalShadow
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local Oklab = require("@mod/color/Oklab")
@@ -11,7 +13,7 @@ local rng = Random.new()
 
 local mesh = {}
 
-function mesh.emit(ref: Model, obj: BasePart, scope: utility.scope, scale: number, mustEmit: boolean?)
+function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number, mustEmit: boolean?)
   local start = ref:FindFirstChild("Start")
   local goal = ref:FindFirstChild("End")
 
@@ -200,17 +202,10 @@ function mesh.emit(ref: Model, obj: BasePart, scope: utility.scope, scale: numbe
 
   local promises = {}
 
-  local emitOnFinish = obj:FindFirstChild("EmitOnFinish")
+  local emitOnFinish = scope.effects.prepareEmitOnFinish(obj, scope)
 
-  if emitOnFinish then
-    emitOnFinish.Parent = nil
-    table.insert(scope, emitOnFinish)
-  end
-
-  if shared.vfx and #obj:GetChildren() ~= 0 then
-    local env = shared.vfx.emit(obj)
-    table.insert(promises, env.Finished)
-  end
+  local env = scope.effects.emitNested(obj, scope.depth + 1)
+  table.insert(promises, env.Finished)
 
   local speedTween
 
@@ -472,16 +467,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: utility.scope, scale: numbe
 
   Promise.all(promises):await()
 
-  local children = emitOnFinish and emitOnFinish:GetChildren()
-
-  if children and #children ~= 0 then
-    for _, child in children do
-      child.Parent = realObj
-    end
-
-    local env = shared.vfx.emit(table.unpack(children))
-    env.Finished:await()
-  end
+  local env = scope.effects.emitOnFinish(emitOnFinish, realObj, scope.depth + 1)
+  env.Finished:await()
 end
 
 return mesh

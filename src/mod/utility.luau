@@ -1,11 +1,11 @@
+--!nolint LocalShadow
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
 
+local types = require("@root/types")
 local logger = require("@mod/logger")
 
-export type scope = {
-  depth: number,
-}
+export type scope = types.scope
 
 local utility = {}
 
@@ -164,10 +164,7 @@ function utility.reboundfn<A>(sec: number, func: (...A) -> never): (...A) -> nev
 end
 
 function utility.randomUnitVector(min: Vector3, max: Vector3, rng: Random?)
-  if not rng then
-    rng = Random.new()
-  end
-
+  local rng = rng or Random.new()
   return Vector3.new(rng:NextNumber(min.X, max.X), rng:NextNumber(min.Y, max.Y), rng:NextNumber(min.Z, max.Z))
 end
 
@@ -179,9 +176,9 @@ function utility.isMeshVFX(obj: Instance)
   return obj
     and obj:IsA("Model")
     and obj:FindFirstChild("Start")
-    and obj.Start:IsA("BasePart")
+    and (obj :: any).Start:IsA("BasePart")
     and obj:FindFirstChild("End")
-    and obj.End:IsA("BasePart")
+    and (obj :: any).End:IsA("BasePart")
 end
 
 function utility.isSpinModelStatic(model: Model)
@@ -192,7 +189,12 @@ function utility.isSpinModelStatic(model: Model)
 end
 
 function utility.cleanupScope(scope: { unknown })
-  for _, v in scope do
+  for k, v in scope do
+    -- Skip scope metadata fields
+    if k == "depth" or k == "effects" then
+      continue
+    end
+
     local t = typeof(v)
 
     if t == "Instance" then
@@ -238,12 +240,19 @@ function utility.findFirstClassWithTag(obj: Instance?, class: string, tag: strin
   end
 end
 
-function utility.cloneParticleAncestry(particle: ParticleEmitter, map: { [Instance]: Instance }?): (Instance, Instance)
+function utility.cloneParticleAncestry(
+  particle: ParticleEmitter,
+  map: { [Instance?]: Instance }
+): (Instance?, Instance?)
   if not particle:FindFirstAncestorWhichIsA("BasePart") and not particle:FindFirstAncestorOfClass("Attachment") then
     return
   end
 
-  local function findAncestor(obj: Instance)
+  local function findAncestor(obj: Instance?)
+    if not obj then
+      return
+    end
+
     local ancestor = obj
 
     if obj.Parent and (obj.Parent:IsA("BasePart") or obj.Parent:IsA("Attachment")) then
@@ -253,7 +262,11 @@ function utility.cloneParticleAncestry(particle: ParticleEmitter, map: { [Instan
     return ancestor
   end
 
-  local function recurse(obj: Instance)
+  local function recurse(obj: Instance?)
+    if not obj then
+      return
+    end
+
     local created = map[obj]
 
     if created then
@@ -487,7 +500,7 @@ function utility.assembleMeshVFX(start: BasePart, scope: scope, shared_part_cach
   end
 end
 
-function utility.getBezierPoints(root: Attachment, metadata: boolean)
+function utility.getBezierPoints(root: Attachment, metadata: boolean?)
   local objs = root:GetChildren()
 
   table.sort(objs, function(a, b)

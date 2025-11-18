@@ -1,9 +1,10 @@
 local tween = require("@mod/tween")
+local types = require("@root/types")
 local utility = require("@mod/utility")
 
 local particle = {}
 
-function particle.emit(ref: ParticleEmitter, obj: ParticleEmitter, scope: utility.scope)
+function particle.emit(ref: ParticleEmitter, obj: ParticleEmitter, scope: types.scope)
   if ref.Enabled then
     ref.Enabled = false
   end
