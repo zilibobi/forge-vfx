@@ -94,8 +94,10 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
           end)
         )
 
+        -- Ignore all effects that emit nested effects on their own
         if
-          not obj:HasTag(utility.BEZIER_TAG)
+          not obj:IsA("Beam")
+          and not obj:HasTag(utility.BEZIER_TAG)
           and not utility.isMeshVFX(obj)
           and not (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG))
         then

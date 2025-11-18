@@ -1,6 +1,9 @@
+--!nolint LocalShadow
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
+
+local Promise = require("@pkg/Promise")
 
 local rng = Random.new()
 
@@ -17,6 +20,8 @@ end
 local beam = {}
 
 function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
+  local emitOnFinish = scope.effects.prepareEmitOnFinish(obj, scope)
+
   local a1, a2, a3, a4 = getLegacyWidths(ref, scale)
 
   local w1 = utility.getAttribute(ref, "Width0_Start", a3)
@@ -51,9 +56,13 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   obj.Enabled = true
 
+  local promises = {}
   local currentSpeed = 1
 
   local speedTween
+
+  local env = scope.effects.emitNested(obj, scope.depth + 1)
+  table.insert(promises, env.Finished)
 
   if speedStart ~= speedEnd then
     speedTween = tween.fromParams(
@@ -136,6 +145,13 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
       then deltaTime * currentSpeed
       else nil
   end, speedTween, scope)
+
+  if emitOnFinish then
+    local env = scope.effects.emitOnFinish(emitOnFinish, obj.Parent or workspace.Terrain, scope.depth + 1)
+    table.insert(promises, env.Finished)
+  end
+
+  Promise.all(promises):await()
 end
 
 return beam
