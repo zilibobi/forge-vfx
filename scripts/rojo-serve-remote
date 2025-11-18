@@ -1,2 +1,0 @@
-#!/bin/bash
-rojo serve --address="$(hostname -i | awk '{print $1}')" dev.project.json
