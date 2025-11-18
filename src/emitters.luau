@@ -151,10 +151,7 @@ function emitters.spin(obj: Model, scope: utility.scope): boolean
     return true
   end
 
-  -- fix. the. lag.
-  -- https://devforum.roblox.com/t/selecting-a-model-moved-using-pivotto-on-every-frame-causes-severe-lag/3775544
   utility.try(`failed to emit spinning model '{obj:GetFullName()}' with error: %s`, Spin.emit, obj, scope)
-
   utility.unlock(obj)
 
   return true
@@ -250,7 +247,7 @@ function emitters.dispatch(
     local att = utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
 
     if att then
-      local name = obj.Parent.Name
+      local name = obj.Parent and obj.Parent.Name or ""
 
       if name == "Rings" then
         shouldCleanup = emitters.shockwave_ring(att, obj, scope)

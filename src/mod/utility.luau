@@ -138,7 +138,7 @@ function utility.lerp(a: number, b: number, t: number)
   return a + (b - a) * t
 end
 
-function utility.try<R, A>(msg: string, func: (...A) -> ...R, ...: A): (boolean, ...R)
+function utility.try<R...>(msg: string, func: (...any) -> R..., ...: any): (boolean, R...)
   local res = { xpcall(func, function(err)
     logger.warn(string.format(msg, err))
   end, ...) }
