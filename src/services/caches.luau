@@ -4,7 +4,7 @@ local utility = require("@mod/utility")
 
 local caches = {}
 
-function caches.init(scope: utility.scope)
+function caches.init(scope: { any })
   local shared_part_cache
 
   do
