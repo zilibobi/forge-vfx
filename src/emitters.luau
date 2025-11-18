@@ -2,6 +2,7 @@ local Beam = require("@vfx/beam")
 local Spin = require("@vfx/spin")
 local Mesh = require("@vfx/mesh")
 local Bezier = require("@vfx/bezier")
+local Screen = require("@vfx/screen")
 local Particle = require("@vfx/particle")
 local CameraShake = require("@vfx/camera_shake")
 local TweenProperty = require("@vfx/tween_property")
@@ -179,6 +180,12 @@ function emitters.tween_property(obj: RayValue, scope: utility.scope): boolean
   )
 
   utility.unlock(obj)
+
+  return true
+end
+
+function emitters.screen(obj: BasePart, scope: utility.scope): boolean
+  utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
 
   return true
 end

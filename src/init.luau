@@ -90,7 +90,6 @@ local logger = require("@mod/logger")
 local utility = require("@mod/utility")
 
 local Bezier = require("@vfx/bezier")
-local Screen = require("@vfx/screen")
 local CameraShake = require("@vfx/camera_shake")
 local ShockwaveRing = require("@vfx/shockwave_ring")
 local ShockwaveLine = require("@vfx/shockwave_line")
@@ -205,25 +204,6 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
 
   local legacyScale = 1
 
-  local function emit(obj: Instance, depth: number)
-    return Promise.new(function(resolve)
-      local function run()
-        local scope = {}
-        scope.depth = depth
-
-        local shouldCleanup =
-          emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
-
-        if shouldCleanup then
-          utility.cleanupScope(scope)
-        end
-      end
-
-      run()
-      resolve()
-    end)
-  end
-
   local list = { ... }
   local rootPromises = {}
 
@@ -249,8 +229,7 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
         local scope = {}
         scope.depth = depth
 
-        local await =
-          utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
+        local await = emitters.screen(obj, scope)
 
         if await then
           local descendants = obj:GetDescendants()
@@ -273,7 +252,22 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
           )
         end
       else
-        table.insert(promises, emit(obj, depth))
+        table.insert(
+          promises,
+          Promise.new(function(resolve)
+            local scope = {}
+            scope.depth = depth
+
+            local shouldCleanup =
+              emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
+
+            if shouldCleanup then
+              utility.cleanupScope(scope)
+            end
+
+            resolve()
+          end)
+        )
 
         if
           not obj:HasTag(utility.BEZIER_TAG)
