@@ -99,7 +99,14 @@ function emitters.bezier(obj: Instance, scope: types.scope, skipEnabledCheck: bo
 
   table.insert(scope, clone)
 
-  utility.try(`failed to emit bezier '{obj:GetFullName()}' with error: %s`, Bezier.emit, obj, clone, scope)
+  utility.try(
+    `failed to emit bezier '{obj:GetFullName()}' with error: %s`,
+    Bezier.emit,
+    obj,
+    clone,
+    scope,
+    skipEnabledCheck
+  )
 end
 
 function emitters.mesh(
@@ -131,7 +138,8 @@ function emitters.mesh(
           obj,
           utility.assembleMeshVFX(start, scope, shared_part_cache),
           scope,
-          legacyScale
+          legacyScale,
+          skipEnabledCheck
         )
 
         resolve()
