@@ -35,26 +35,72 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
 
   local function emitAll(depth: number, children: { Instance }, promises: {})
     for _, obj in children do
-      table.insert(
-        promises,
-        Promise.new(function(resolve)
-          local scope = {}
-          scope.depth = depth
-          scope.effects = effects
-
-          emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
-          utility.cleanupScope(scope)
-
-          resolve()
-        end)
-      )
-
+      -- Special handling for screen effects
       if
-        not obj:HasTag(utility.BEZIER_TAG)
-        and not utility.isMeshVFX(obj)
-        and not (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG))
+        obj:IsA("BasePart")
+        and obj:GetAttribute("Enabled")
+        and not utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
       then
-        emitAll(depth + 1, obj:GetChildren(), promises)
+        if utility.lock(obj) then
+          continue
+        end
+
+        local anc = obj:FindFirstAncestorOfClass("Model")
+
+        if anc and not utility.isSpinModelStatic(anc) then
+          continue
+        end
+
+        local lockThread = coroutine.running()
+
+        local scope = {}
+        scope.depth = depth
+        scope.effects = effects
+
+        local await = emitters.screen(obj, scope)
+
+        if await then
+          local descendants = obj:GetDescendants()
+
+          if #descendants == 0 then
+            utility.cleanupScope(scope)
+            continue
+          end
+
+          local inner = {}
+
+          emitAll(depth + 1, obj:GetChildren(), inner)
+
+          table.insert(
+            promises,
+            Promise.all(inner):finally(function()
+              utility.unlock(obj, lockThread)
+              utility.cleanupScope(scope)
+            end)
+          )
+        end
+      else
+        table.insert(
+          promises,
+          Promise.new(function(resolve)
+            local scope = {}
+            scope.depth = depth
+            scope.effects = effects
+
+            emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
+            utility.cleanupScope(scope)
+
+            resolve()
+          end)
+        )
+
+        if
+          not obj:HasTag(utility.BEZIER_TAG)
+          and not utility.isMeshVFX(obj)
+          and not (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG))
+        then
+          emitAll(depth + 1, obj:GetChildren(), promises)
+        end
       end
     end
   end

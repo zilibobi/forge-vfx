@@ -53,6 +53,8 @@ function screen.emit(ref: BasePart, scope: types.scope)
       RunService:UnbindFromRenderStep(id)
     end)
   end
+
+  return true
 end
 
 return screen

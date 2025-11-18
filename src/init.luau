@@ -95,11 +95,8 @@ local ShockwaveRing = require("@vfx/shockwave_ring")
 local ShockwaveLine = require("@vfx/shockwave_line")
 local ShockwaveDebris = require("@vfx/shockwave_debris")
 
-local Promise = require("@pkg/Promise")
-
 local caches = require("@srv/caches")
 local effects = require("@srv/effects")
-local emitters = require("@self/emitters")
 local texture_loader = require("@srv/texture_loader")
 local enabled_effects = require("@srv/enabled_effects")
 
@@ -206,92 +203,7 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
     logger.error("not initialized")
   end
 
-  local sharedUncMap: { [Instance]: number } = {}
-  local sharedRefMap: { [Instance]: Instance } = {}
-
-  local legacyScale = 1
-
-  local list = { ... }
-  local rootPromises = {}
-
-  local function emitAll(depth: number, children: { Instance }, promises: {})
-    for _, obj in children do
-      if
-        obj:IsA("BasePart")
-        and obj:GetAttribute("Enabled")
-        and not utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
-      then
-        if utility.lock(obj) then
-          continue
-        end
-
-        local anc = obj:FindFirstAncestorOfClass("Model")
-
-        if anc and not utility.isSpinModelStatic(anc) then
-          continue
-        end
-
-        local lockThread = coroutine.running()
-
-        local scope = {}
-        scope.depth = depth
-        scope.effects = effects
-
-        local await = emitters.screen(obj, scope)
-
-        if await then
-          local descendants = obj:GetDescendants()
-
-          if #descendants == 0 then
-            utility.cleanupScope(scope)
-            return
-          end
-
-          local inner = {}
-
-          emitAll(depth + 1, obj:GetChildren(), inner)
-
-          table.insert(
-            rootPromises,
-            Promise.all(inner):finally(function()
-              utility.unlock(obj, lockThread)
-              utility.cleanupScope(scope)
-            end)
-          )
-        end
-      else
-        table.insert(
-          promises,
-          Promise.new(function(resolve)
-            local scope = {}
-            scope.depth = depth
-            scope.effects = effects
-
-            emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
-            utility.cleanupScope(scope)
-
-            resolve()
-          end)
-        )
-
-        if
-          not obj:HasTag(utility.BEZIER_TAG)
-          and not utility.isMeshVFX(obj)
-          and not (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG))
-        then
-          emitAll(depth + 1, obj:GetChildren(), promises)
-        end
-      end
-    end
-  end
-
-  emitAll(depth, list, rootPromises)
-
-  local env = {
-    Finished = Promise.all(rootPromises),
-  }
-
-  return env
+  return effects.emit(depth, ...)
 end
 
 function api.emit(vfxOrScale: number | Instance, ...: Instance)

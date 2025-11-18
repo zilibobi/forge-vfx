@@ -180,7 +180,10 @@ function emitters.tween_property(obj: RayValue, scope: types.scope)
 end
 
 function emitters.screen(obj: BasePart, scope: types.scope)
-  utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
+  local ok, result =
+    utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
+
+  return if ok then result else false
 end
 
 function emitters.shockwave_ring(att: Attachment, obj: Part, scope: types.scope)
