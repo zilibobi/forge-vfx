@@ -22,12 +22,12 @@ function emitters.particle(
   sharedUncMap: { [Instance]: number },
   sharedRefMap: { [Instance]: Instance },
   legacyScale: number
-): boolean
+)
   if not obj:IsDescendantOf(workspace) then
     local parent, ancestor = utility.cloneParticleAncestry(obj, sharedRefMap)
 
     if not parent then
-      return true
+      return
     end
 
     table.insert(scope, ancestor)
@@ -56,8 +56,6 @@ function emitters.particle(
     )
 
     sharedUncMap[ancestor] -= 1
-
-    return sharedUncMap[ancestor] <= 0
   else
     utility.try(
       `failed to emit particle '{obj:GetFullName()}' with error: %s`,
@@ -67,12 +65,10 @@ function emitters.particle(
       scope,
       legacyScale
     )
-
-    return true
   end
 end
 
-function emitters.beam(obj: Beam, scope: utility.scope, legacyScale: number): boolean
+function emitters.beam(obj: Beam, scope: utility.scope, legacyScale: number)
   local clone = obj:Clone()
   clone.Archivable = false
   clone.Parent = workspace.Terrain
@@ -80,23 +76,20 @@ function emitters.beam(obj: Beam, scope: utility.scope, legacyScale: number): bo
   table.insert(scope, clone)
 
   utility.try(`failed to emit beam '{obj:GetFullName()}' with error: %s`, Beam.emit, obj, clone, scope, legacyScale)
-
-  return true
 end
 
-function emitters.trail(obj: Trail): boolean
+function emitters.trail(obj: Trail)
   obj.Enabled = true
-  return true
 end
 
-function emitters.bezier(obj: Instance, scope: utility.scope): boolean
+function emitters.bezier(obj: Instance, scope: utility.scope, skipEnabledCheck: boolean?)
   local part = obj:FindFirstChildOfClass("Part")
 
   if not part then
-    return true
+    return
   end
 
-  if obj:GetAttribute("Enabled") then
+  if not skipEnabledCheck and obj:GetAttribute("Enabled") then
     obj:SetAttribute("Enabled", false)
   end
 
@@ -106,18 +99,22 @@ function emitters.bezier(obj: Instance, scope: utility.scope): boolean
   table.insert(scope, clone)
 
   utility.try(`failed to emit bezier '{obj:GetFullName()}' with error: %s`, Bezier.emit, obj, clone, scope)
-
-  return true
 end
 
-function emitters.mesh(obj: Instance, scope: utility.scope, shared_part_cache: any, legacyScale: number)
+function emitters.mesh(
+  obj: Instance,
+  scope: utility.scope,
+  shared_part_cache: any,
+  legacyScale: number,
+  skipEnabledCheck: boolean?
+)
   local start = obj:FindFirstChild("Start")
 
   if not start then
-    return true
+    return
   end
 
-  if obj:GetAttribute("Enabled") then
+  if not skipEnabledCheck and obj:GetAttribute("Enabled") then
     obj:SetAttribute("Enabled", false)
   end
 
@@ -142,30 +139,24 @@ function emitters.mesh(obj: Instance, scope: utility.scope, shared_part_cache: a
   end
 
   Promise.all(tasks):await()
-
-  return true
 end
 
-function emitters.spin(obj: Model, scope: utility.scope): boolean
+function emitters.spin(obj: Model, scope: utility.scope)
   if utility.lock(obj) then
-    return true
+    return
   end
 
   utility.try(`failed to emit spinning model '{obj:GetFullName()}' with error: %s`, Spin.emit, obj, scope)
   utility.unlock(obj)
-
-  return true
 end
 
-function emitters.camera_shake(obj: RayValue, scope: utility.scope): boolean
+function emitters.camera_shake(obj: RayValue, scope: utility.scope)
   utility.try(`failed to emit camera shake '{obj:GetFullName()}' with error: %s`, CameraShake.emit, obj, scope)
-
-  return true
 end
 
-function emitters.tween_property(obj: RayValue, scope: utility.scope): boolean
+function emitters.tween_property(obj: RayValue, scope: utility.scope)
   if not obj.Parent or utility.lock(obj) then
-    return true
+    return
   end
 
   utility.try(
@@ -177,23 +168,17 @@ function emitters.tween_property(obj: RayValue, scope: utility.scope): boolean
   )
 
   utility.unlock(obj)
-
-  return true
 end
 
-function emitters.screen(obj: BasePart, scope: utility.scope): boolean
+function emitters.screen(obj: BasePart, scope: utility.scope)
   utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
-
-  return true
 end
 
-function emitters.shockwave_ring(att: Attachment, obj: Part, scope: utility.scope): boolean
+function emitters.shockwave_ring(att: Attachment, obj: Part, scope: utility.scope)
   utility.try(`failed to emit shockwave ring '{obj:GetFullName()}' with error: %s`, ShockwaveRing.emit, att, obj, scope)
-
-  return true
 end
 
-function emitters.shockwave_debris(att: Attachment, obj: Part, scope: utility.scope): boolean
+function emitters.shockwave_debris(att: Attachment, obj: Part, scope: utility.scope)
   utility.try(
     `failed to emit shockwave debris '{obj:GetFullName()}' with error: %s`,
     ShockwaveDebris.emit,
@@ -201,14 +186,10 @@ function emitters.shockwave_debris(att: Attachment, obj: Part, scope: utility.sc
     obj,
     scope
   )
-
-  return true
 end
 
-function emitters.shockwave_line(att: Attachment, obj: Part, scope: utility.scope): boolean
+function emitters.shockwave_line(att: Attachment, obj: Part, scope: utility.scope)
   utility.try(`failed to emit shockwave line '{obj:GetFullName()}' with error: %s`, ShockwaveLine.emit, att, obj, scope)
-
-  return true
 end
 
 -- Dispatch function to determine which emitter to use and call it
@@ -219,26 +200,24 @@ function emitters.dispatch(
   sharedRefMap: { [Instance]: Instance },
   shared_part_cache: any,
   legacyScale: number
-): boolean
-  local shouldCleanup = true
-
+)
   if obj:IsA("ParticleEmitter") then
-    shouldCleanup = emitters.particle(obj, scope, sharedUncMap, sharedRefMap, legacyScale)
+    emitters.particle(obj, scope, sharedUncMap, sharedRefMap, legacyScale)
   elseif obj:IsA("Beam") then
-    shouldCleanup = emitters.beam(obj, scope, legacyScale)
+    emitters.beam(obj, scope, legacyScale)
   elseif obj:IsA("Trail") then
-    shouldCleanup = emitters.trail(obj)
+    emitters.trail(obj)
   elseif obj:HasTag(utility.BEZIER_TAG) then
-    shouldCleanup = emitters.bezier(obj, scope)
+    emitters.bezier(obj, scope)
   elseif utility.isMeshVFX(obj) then
-    shouldCleanup = emitters.mesh(obj, scope, shared_part_cache, legacyScale)
+    emitters.mesh(obj, scope, shared_part_cache, legacyScale)
   elseif obj:IsA("Model") then
-    shouldCleanup = emitters.spin(obj, scope)
+    emitters.spin(obj, scope)
   elseif obj:IsA("RayValue") then
     if obj:HasTag(utility.SCREENSHAKE_TAG) then
-      shouldCleanup = emitters.camera_shake(obj, scope)
+      emitters.camera_shake(obj, scope)
     else
-      shouldCleanup = emitters.tween_property(obj, scope)
+      emitters.tween_property(obj, scope)
     end
   end
 
@@ -250,16 +229,40 @@ function emitters.dispatch(
       local name = obj.Parent and obj.Parent.Name or ""
 
       if name == "Rings" then
-        shouldCleanup = emitters.shockwave_ring(att, obj, scope)
+        emitters.shockwave_ring(att, obj, scope)
       elseif name == "Debris" then
-        shouldCleanup = emitters.shockwave_debris(att, obj, scope)
+        emitters.shockwave_debris(att, obj, scope)
       elseif name == "Lines" then
-        shouldCleanup = emitters.shockwave_line(att, obj, scope)
+        emitters.shockwave_line(att, obj, scope)
       end
     end
   end
-
-  return shouldCleanup
 end
+
+-- Registry for enabled effects (effects that emit continuously)
+type EnabledEffectConfig = {
+  check: (obj: Instance) -> boolean,
+  emit: (obj: Instance, scope: utility.scope, shared_part_cache: any) -> (),
+}
+
+emitters.enabled_registry = {
+  mesh = {
+    check = function(obj: Instance)
+      return utility.isMeshVFX(obj)
+    end,
+    emit = function(obj: Instance, scope: utility.scope, shared_part_cache: any)
+      emitters.mesh(obj, scope, shared_part_cache, 1, true)
+    end,
+  } :: EnabledEffectConfig,
+
+  bezier = {
+    check = function(obj: Instance)
+      return obj:HasTag(utility.BEZIER_TAG)
+    end,
+    emit = function(obj: Instance, scope: utility.scope, shared_part_cache: any)
+      emitters.bezier(obj, scope, true)
+    end,
+  } :: EnabledEffectConfig,
+} :: { [string]: EnabledEffectConfig }
 
 return emitters

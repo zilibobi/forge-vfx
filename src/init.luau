@@ -258,12 +258,8 @@ local function fullEmit(scale: number, depth: number, ...: Instance)
             local scope = {}
             scope.depth = depth
 
-            local shouldCleanup =
-              emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
-
-            if shouldCleanup then
-              utility.cleanupScope(scope)
-            end
+            emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api.caches.shared_part, legacyScale)
+            utility.cleanupScope(scope)
 
             resolve()
           end)

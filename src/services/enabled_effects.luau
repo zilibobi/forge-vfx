@@ -1,10 +1,8 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
-local Mesh = require("@vfx/mesh")
-local Bezier = require("@vfx/bezier")
-
 local utility = require("@mod/utility")
+local emitters = require("@root/emitters")
 
 local enabled_effects = {}
 
@@ -22,10 +20,17 @@ function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
   end
 
   local function addEnabledEffect(obj: Instance)
-    local isMesh = utility.isMeshVFX(obj)
-    local isBezier = obj:HasTag(utility.BEZIER_TAG)
+    -- Find which effect type this object is
+    local effectConfig = nil
 
-    if not isMesh and not isBezier then
+    for _, config in emitters.enabled_registry do
+      if config.check(obj) then
+        effectConfig = config
+        break
+      end
+    end
+
+    if not effectConfig then
       return
     end
 
@@ -73,53 +78,12 @@ function enabled_effects.init(scope: utility.scope, shared_part_cache: any)
               return
             end
 
+            last = os.clock()
+
             local emitScope = {}
             emitScope.depth = 0
 
-            if isMesh then
-              local start = obj:FindFirstChild("Start")
-
-              if not start then
-                obj:RemoveTag(utility.ENABLED_VFX_TAG)
-                return
-              end
-
-              last = os.clock()
-
-              for i = 1, utility.getAttribute(obj, "EmitCount", 1) do
-                utility.try(
-                  `failed to emit mesh '{obj:GetFullName()}' with error: %s`,
-                  Mesh.emit,
-                  obj,
-                  utility.assembleMeshVFX(start, emitScope, shared_part_cache),
-                  emitScope,
-                  1,
-                  true
-                )
-              end
-            elseif isBezier then
-              local part = obj:FindFirstChildOfClass("Part")
-
-              if not part then
-                return
-              end
-
-              last = os.clock()
-
-              local clone = part:Clone()
-              clone.Locked = true
-
-              table.insert(emitScope, clone)
-
-              utility.try(
-                `failed to emit bezier '{obj:GetFullName()}' with error: %s`,
-                Bezier.emit,
-                obj,
-                clone,
-                emitScope,
-                true
-              )
-            end
+            effectConfig.emit(obj, emitScope, shared_part_cache)
 
             utility.cleanupScope(emitScope)
           end)
