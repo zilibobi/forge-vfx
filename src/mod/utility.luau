@@ -67,6 +67,8 @@ utility.COPY_EXTENDED_PART_PROPERTIES = {
   "Size",
   "Transparency",
 
+  "CustomPhysicalProperties",
+
   "CanCollide",
   "CanQuery",
   "CanTouch",
