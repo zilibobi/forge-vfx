@@ -2,10 +2,7 @@
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
 
-local types = require("@root/types")
 local logger = require("@mod/logger")
-
-export type scope = types.scope
 
 local utility = {}
 
@@ -461,7 +458,7 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
   return decals, flipbooks, fromToMap
 end
 
-function utility.assembleMeshVFX(start: BasePart, scope: scope, shared_part_cache: any)
+function utility.assembleMeshVFX(start: BasePart, scope: { any }, shared_part_cache: any)
   local id = utility.getRandomId()
 
   if start:IsA("Part") then
