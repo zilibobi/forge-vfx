@@ -47,25 +47,11 @@ function emitters.particle(
       sharedUncMap[ancestor] += 1
     end
 
-    utility.try(
-      `failed to emit particle '{obj:GetFullName()}' with error: %s`,
-      Particle.emit,
-      obj,
-      clone,
-      scope,
-      legacyScale
-    )
+    utility.try(`failed to emit particle with error: %s`, Particle.emit, obj, clone, scope, legacyScale)
 
     sharedUncMap[ancestor] -= 1
   else
-    utility.try(
-      `failed to emit particle '{obj:GetFullName()}' with error: %s`,
-      Particle.emit,
-      obj,
-      obj,
-      scope,
-      legacyScale
-    )
+    utility.try(`failed to emit particle with error: %s`, Particle.emit, obj, obj, scope, legacyScale)
   end
 end
 
@@ -76,7 +62,7 @@ function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
 
   table.insert(scope, clone)
 
-  utility.try(`failed to emit beam '{obj:GetFullName()}' with error: %s`, Beam.emit, obj, clone, scope, legacyScale)
+  utility.try(`failed to emit beam with error: %s`, Beam.emit, obj, clone, scope, legacyScale)
 end
 
 function emitters.trail(obj: Trail)
@@ -99,14 +85,7 @@ function emitters.bezier(obj: Instance, scope: types.scope, skipEnabledCheck: bo
 
   table.insert(scope, clone)
 
-  utility.try(
-    `failed to emit bezier '{obj:GetFullName()}' with error: %s`,
-    Bezier.emit,
-    obj,
-    clone,
-    scope,
-    skipEnabledCheck
-  )
+  utility.try(`failed to emit bezier with error: %s`, Bezier.emit, obj, clone, scope, skipEnabledCheck)
 end
 
 function emitters.mesh(
@@ -133,7 +112,7 @@ function emitters.mesh(
       tasks,
       Promise.new(function(resolve)
         utility.try(
-          `failed to emit mesh '{obj:GetFullName()}' with error: %s`,
+          `failed to emit mesh with error: %s`,
           Mesh.emit,
           obj,
           utility.assembleMeshVFX(start, scope, shared_part_cache),
@@ -155,12 +134,12 @@ function emitters.spin(obj: Model, scope: types.scope)
     return
   end
 
-  utility.try(`failed to emit spinning model '{obj:GetFullName()}' with error: %s`, Spin.emit, obj, scope)
+  utility.try(`failed to emit spinning model with error: %s`, Spin.emit, obj, scope)
   utility.unlock(obj)
 end
 
 function emitters.camera_shake(obj: RayValue, scope: types.scope)
-  utility.try(`failed to emit camera shake '{obj:GetFullName()}' with error: %s`, CameraShake.emit, obj, scope)
+  utility.try(`failed to emit camera shake with error: %s`, CameraShake.emit, obj, scope)
 end
 
 function emitters.tween_property(obj: RayValue, scope: types.scope)
@@ -168,40 +147,27 @@ function emitters.tween_property(obj: RayValue, scope: types.scope)
     return
   end
 
-  utility.try(
-    `failed to emit tween property '{obj:GetFullName()}' with error: %s`,
-    TweenProperty.emit,
-    obj.Parent,
-    obj,
-    scope
-  )
+  utility.try(`failed to emit tween property with error: %s`, TweenProperty.emit, obj.Parent, obj, scope)
 
   utility.unlock(obj)
 end
 
 function emitters.screen(obj: BasePart, scope: types.scope)
-  local ok, result =
-    utility.try(`failed to emit screen effect '{obj:GetFullName()}' with error: %s`, Screen.emit, obj, scope)
+  local ok, result = utility.try(`failed to emit screen effect with error: %s`, Screen.emit, obj, scope)
 
   return if ok then result else false
 end
 
 function emitters.shockwave_ring(att: Attachment, obj: Part, scope: types.scope)
-  utility.try(`failed to emit shockwave ring '{obj:GetFullName()}' with error: %s`, ShockwaveRing.emit, att, obj, scope)
+  utility.try(`failed to emit shockwave ring with error: %s`, ShockwaveRing.emit, att, obj, scope)
 end
 
 function emitters.shockwave_debris(att: Attachment, obj: Part, scope: types.scope)
-  utility.try(
-    `failed to emit shockwave debris '{obj:GetFullName()}' with error: %s`,
-    ShockwaveDebris.emit,
-    att,
-    obj,
-    scope
-  )
+  utility.try(`failed to emit shockwave debris with error: %s`, ShockwaveDebris.emit, att, obj, scope)
 end
 
 function emitters.shockwave_line(att: Attachment, obj: Part, scope: types.scope)
-  utility.try(`failed to emit shockwave line '{obj:GetFullName()}' with error: %s`, ShockwaveLine.emit, att, obj, scope)
+  utility.try(`failed to emit shockwave line with error: %s`, ShockwaveLine.emit, att, obj, scope)
 end
 
 -- Dispatch function to determine which emitter to use and call it
