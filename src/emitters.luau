@@ -172,35 +172,50 @@ end
 
 -- Dispatch function to determine which emitter to use and call it
 function emitters.dispatch(
-  obj: Instance,
+  obj: any, -- since we don't use IsA(...), we don't get type narrowing
   scope: types.scope,
   sharedUncMap: { [Instance]: number },
   sharedRefMap: { [Instance]: Instance },
   shared_part_cache: any,
   legacyScale: number
 )
-  if obj:IsA("ParticleEmitter") then
+  local className = obj.ClassName
+
+  if className == "ParticleEmitter" then
     emitters.particle(obj, scope, sharedUncMap, sharedRefMap, legacyScale)
-  elseif obj:IsA("Beam") then
+    return
+  elseif className == "Beam" then
     emitters.beam(obj, scope, legacyScale)
-  elseif obj:IsA("Trail") then
+    return
+  elseif className == "Trail" then
     emitters.trail(obj)
-  elseif obj:HasTag(utility.BEZIER_TAG) then
-    emitters.bezier(obj, scope)
-  elseif utility.isMeshVFX(obj) then
-    emitters.mesh(obj, scope, shared_part_cache, legacyScale)
-  elseif obj:IsA("Model") then
-    emitters.spin(obj, scope)
-  elseif obj:IsA("RayValue") then
+    return
+  elseif className == "RayValue" then
     if obj:HasTag(utility.SCREENSHAKE_TAG) then
       emitters.camera_shake(obj, scope)
     else
       emitters.tween_property(obj, scope)
     end
+
+    return
   end
 
-  -- Handle shockwave emissions for Parts
-  if obj:IsA("Part") then
+  if obj:HasTag(utility.BEZIER_TAG) then
+    emitters.bezier(obj, scope)
+    return
+  end
+
+  if className == "Model" then
+    if utility.isMeshVFX(obj) then
+      emitters.mesh(obj, scope, shared_part_cache, legacyScale)
+    else
+      emitters.spin(obj, scope)
+    end
+
+    return
+  end
+
+  if className == "Part" then
     local att = utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
 
     if att then

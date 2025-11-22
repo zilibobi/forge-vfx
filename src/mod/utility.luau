@@ -4,6 +4,8 @@ local PhysicsService = game:GetService("PhysicsService")
 
 local logger = require("@mod/logger")
 
+local Promise = require("@pkg/Promise")
+
 local utility = {}
 
 utility.PLUGIN_CONTEXT = script:FindFirstAncestorOfClass("Plugin")
@@ -185,6 +187,27 @@ function utility.isSpinModelStatic(model: Model)
     and utility.getAttribute(model, "Scale_Start", 1, true) == 1
     and utility.getAttribute(model, "Scale_End", 1, true) == 1
     and (utility.getAttribute(model, "SyncPosition", false, true) == false)
+end
+
+function utility.shouldSkipNested(obj: Instance)
+  return obj:IsA("Beam")
+    or obj:HasTag(utility.BEZIER_TAG)
+    or utility.isMeshVFX(obj)
+    or (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG) ~= nil)
+end
+
+function utility.createEmitPromise(effects: any, instance: Instance, effectDepth: number, emitFunc: any)
+  return Promise.new(function(resolve)
+    local scope = {}
+    scope.depth = effectDepth
+    scope.effects = effects
+
+    emitFunc(scope)
+
+    utility.cleanupScope(scope)
+
+    resolve()
+  end)
 end
 
 function utility.cleanupScope(scope: { unknown })

@@ -5,6 +5,29 @@ local emitters = require("@root/emitters")
 
 local Promise = require("@pkg/Promise")
 
+local EffectSelectors = table.concat({
+  "Beam",
+  "Trail",
+  "ParticleEmitter",
+
+  -- Beziers
+  `.{utility.BEZIER_TAG}`,
+
+  -- Spin models
+  "Model",
+
+  -- Camera shakes
+  "RayValue",
+
+  -- Screen effects
+  "BasePart[$Enabled=true]",
+
+  -- Shockwave effects
+  "#Rings > Part",
+  "#Lines > Part",
+  "#Debris > Part",
+}, ",")
+
 local effects = {}
 
 local api_ref: types.Api?
@@ -33,81 +56,117 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
   local list = { ... }
   local rootPromises = {}
 
-  local function emitAll(depth: number, children: { Instance }, promises: {})
-    for _, obj in children do
-      -- Special handling for screen effects
-      if
-        obj:IsA("BasePart")
-        and obj:GetAttribute("Enabled")
-        and not utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
-      then
-        if utility.lock(obj) then
-          continue
+  local function queryAndEmitDescendants(obj: Instance, baseDepth: number): { any }
+    local allDescendants = obj:QueryDescendants(EffectSelectors)
+
+    if #allDescendants == 0 then
+      return {}
+    end
+
+    local nestedEffectHandlers = {}
+
+    for _, desc in allDescendants do
+      if utility.shouldSkipNested(desc) then
+        nestedEffectHandlers[desc] = true
+      end
+    end
+
+    -- filter and emit valid effects
+    local promises = {}
+
+    for _, desc in allDescendants do
+      local skipThis = false
+      local parent = desc.Parent
+
+      while parent and parent ~= obj do
+        if nestedEffectHandlers[parent] then
+          skipThis = true
+          break
         end
 
-        local anc = obj:FindFirstAncestorOfClass("Model")
+        parent = parent.Parent
+      end
 
-        if anc and not utility.isSpinModelStatic(anc) then
-          continue
+      if not skipThis then
+        local p = desc.Parent
+        local effectDepth = baseDepth
+
+        while p and p ~= obj do
+          p = p.Parent
+          effectDepth += 1
         end
 
-        local lockThread = coroutine.running()
+        table.insert(
+          promises,
+          utility.createEmitPromise(effects, desc, effectDepth, function(scope)
+            emitters.dispatch(desc, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
+          end)
+        )
+      end
+    end
 
-        local scope = {}
-        scope.depth = depth
-        scope.effects = effects
+    return promises
+  end
 
-        local await = emitters.screen(obj, scope)
+  for _, obj in list do
+    -- screen effects
+    if
+      obj:IsA("BasePart")
+      and obj:GetAttribute("Enabled")
+      and not utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG)
+    then
+      if utility.lock(obj) then
+        continue
+      end
 
-        if await then
-          local descendants = obj:GetDescendants()
+      local anc = obj:FindFirstAncestorOfClass("Model")
 
-          if #descendants == 0 then
-            utility.cleanupScope(scope)
-            continue
-          end
+      if anc and not utility.isSpinModelStatic(anc) then
+        continue
+      end
 
-          local inner = {}
+      local lockThread = coroutine.running()
 
-          emitAll(depth + 1, obj:GetChildren(), inner)
+      local scope = {}
+      scope.depth = depth
+      scope.effects = effects
 
+      local await = emitters.screen(obj, scope)
+
+      if await then
+        local innerPromises = queryAndEmitDescendants(obj, depth + 1)
+
+        if #innerPromises > 0 then
           table.insert(
-            promises,
-            Promise.all(inner):finally(function()
+            rootPromises,
+            Promise.all(innerPromises):finally(function()
               utility.unlock(obj, lockThread)
               utility.cleanupScope(scope)
             end)
           )
+        else
+          utility.unlock(obj, lockThread)
+          utility.cleanupScope(scope)
         end
-      else
-        table.insert(
-          promises,
-          Promise.new(function(resolve)
-            local scope = {}
-            scope.depth = depth
-            scope.effects = effects
+      end
+    -- other effects
+    else
+      table.insert(
+        rootPromises,
+        utility.createEmitPromise(effects, obj, depth, function(scope)
+          emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
+        end)
+      )
 
-            emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
-            utility.cleanupScope(scope)
+      if not utility.shouldSkipNested(obj) then
+        local descendantPromises = queryAndEmitDescendants(obj, depth + 1)
 
-            resolve()
-          end)
-        )
-
-        -- Ignore all effects that emit nested effects on their own
-        if
-          not obj:IsA("Beam")
-          and not obj:HasTag(utility.BEZIER_TAG)
-          and not utility.isMeshVFX(obj)
-          and not (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG))
-        then
-          emitAll(depth + 1, obj:GetChildren(), promises)
+        for _, promise in descendantPromises do
+          table.insert(rootPromises, promise)
         end
       end
     end
   end
-
-  emitAll(depth, list, rootPromises)
 
   local env = {
     Finished = Promise.all(rootPromises),
