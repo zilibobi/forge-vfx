@@ -24,6 +24,13 @@ function emitters.particle(
   sharedRefMap: { [Instance]: Instance },
   legacyScale: number
 )
+  local count = utility.getAttribute(obj, "EmitCount", 0)
+  local duration = utility.getAttribute(obj, "EmitDuration", 0)
+
+  if count <= 0 or duration <= 0 then
+    return
+  end
+
   if not obj:IsDescendantOf(workspace) then
     local parent, ancestor = utility.cloneParticleAncestry(obj, sharedRefMap)
 
