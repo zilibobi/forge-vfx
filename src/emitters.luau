@@ -27,7 +27,7 @@ function emitters.particle(
   local count = utility.getAttribute(obj, "EmitCount", 0)
   local duration = utility.getAttribute(obj, "EmitDuration", 0)
 
-  if count <= 0 or duration <= 0 then
+  if count <= 0 and duration <= 0 then
     return
   end
 
@@ -63,9 +63,37 @@ function emitters.particle(
 end
 
 function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
+  local att0, att1 = obj.Attachment0, obj.Attachment1
+
+  if not att0 or not att1 then
+    return
+  end
+
   local clone = obj:Clone()
   clone.Archivable = false
   clone.Parent = workspace.Terrain
+
+  -- clone attachments for beams with scaled length
+  local unscaled = NumberRange.new(1, 1)
+
+  if
+    utility.getAttribute(obj, "Length_Scale_Start", unscaled) ~= unscaled
+    or utility.getAttribute(obj, "Length_Scale_End", unscaled) ~= unscaled
+  then
+    local a, b = att0:Clone(), att1:Clone()
+
+    table.insert(scope, a)
+    table.insert(scope, b)
+
+    a.Name = "ForgeTempAttachment"
+    b.Name = "ForgeTempAttachment"
+
+    clone.Attachment0 = a
+    clone.Attachment1 = b
+
+    a.Parent = att0.Parent
+    b.Parent = att1.Parent
+  end
 
   table.insert(scope, clone)
 
