@@ -77,8 +77,8 @@ function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
   local unscaled = NumberRange.new(1, 1)
 
   if
-    utility.getAttribute(obj, "Length_Scale_Start", unscaled) ~= unscaled
-    or utility.getAttribute(obj, "Length_Scale_End", unscaled) ~= unscaled
+    utility.getAttribute(obj, "Length_Scale_Start", unscaled, true) ~= unscaled
+    or utility.getAttribute(obj, "Length_Scale_End", unscaled, true) ~= unscaled
   then
     local a, b = att0:Clone(), att1:Clone()
 
