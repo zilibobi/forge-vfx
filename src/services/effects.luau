@@ -13,6 +13,9 @@ local EffectSelectors = table.concat({
   -- Beziers
   `.{utility.BEZIER_TAG}`,
 
+  -- Lightning bolts
+  `.{utility.LIGHTNING_TAG}`,
+
   -- Spin models
   "Model",
 
