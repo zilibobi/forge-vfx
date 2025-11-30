@@ -1,3 +1,4 @@
+--!native
 --!nolint LocalShadow
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
@@ -612,7 +613,6 @@ function utility.scaleNumberSequence(
   return NumberSequence.new(scaled)
 end
 
-@native
 function utility.serializePath(points: { Path2DControlPoint })
   local buf = buffer.create(#points * 4 * 6)
 
@@ -645,7 +645,6 @@ function utility.serializePath(points: { Path2DControlPoint })
   return buf
 end
 
-@native
 function utility.deserializePath(data: string | buffer)
   local buf = typeof(data) == "string" and buffer.fromstring(data) or data
   local count = buffer.len(buf) / 24
@@ -675,7 +674,6 @@ function utility.deserializePath(data: string | buffer)
   return points
 end
 
-@native
 function utility.serializeFlipbook(ids: { number })
   local buf = buffer.create(#ids * 8)
 
@@ -686,7 +684,6 @@ function utility.serializeFlipbook(ids: { number })
   return buf
 end
 
-@native
 function utility.deserializeFlipbook(data: string | buffer)
   local buf = typeof(data) == "string" and buffer.fromstring(data) or data
   local count = buffer.len(buf) / 8
