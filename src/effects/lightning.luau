@@ -24,7 +24,7 @@ local function readLightningAttributes(ref: Attachment)
   return {
     -- lightning
     segments = math.max(utility.getAttribute(ref, "Segments", 8), 2),
-    jaggedness = utility.getRangeAttribute(ref, "Jaggedness", NumberRange.new(0.3, 0.5), NumberRange.new(0, 10)),
+    jaggedness = utility.getRangeAttribute(ref, "Jaggedness", NumberRange.new(0.5, 1), NumberRange.new(0, math.huge)),
     offsetScale = utility.getAttribute(ref, "OffsetScale", 1),
     refreshRate = utility.getAttribute(ref, "RefreshRate", 15),
     independentSegments = utility.getAttribute(ref, "IndependentSegments", false),
@@ -46,7 +46,7 @@ local function readLightningAttributes(ref: Attachment)
     fillColorDuration = utility.getAttribute(ref, "Fill_Color_Duration", 1),
     fillTransparencyStart = utility.getAttribute(ref, "Fill_Transparency_Start", 1),
     fillTransparencyEnd = utility.getAttribute(ref, "Fill_Transparency_End", 1),
-    fillDepthMode = utility.getEnumAttribute(ref, "FillDepthMode", "Occluded", { "AlwaysOnTop", "Occluded" }),
+    fillDepthMode = utility.getEnumAttribute(ref, "Fill_DepthMode", "Occluded", { "AlwaysOnTop", "Occluded" }),
 
     -- fade-in
     fadeInStart = utility.getAttribute(ref, "Fade_In_Start", 1),
@@ -63,7 +63,7 @@ local function readLightningAttributes(ref: Attachment)
     lengthEnd = utility.getAttribute(ref, "Length_End", 1),
 
     -- dissipation
-    dissipateMode = utility.getEnumAttribute(ref, "DissipateMode", "None", { "None", "Retract", "Scale" }),
+    dissipateMode = utility.getEnumAttribute(ref, "Dissipate_Mode", "None", { "None", "Retract", "Scale" }),
     dissipateDuration = utility.getAttribute(ref, "Dissipate_Duration", 0.5),
     dissipateCurveData = utility.getAttribute(ref, "Dissipate_Curve", utility.default_bezier),
 
