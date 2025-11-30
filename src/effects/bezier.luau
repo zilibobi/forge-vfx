@@ -33,6 +33,11 @@ local function readBezierAttributes(ref: Attachment)
     rotSpeedEnd = utility.getRangeAttribute(ref, "RotSpeed_End", NumberRange.new(0, 0)),
     minInitRot = utility.getAttribute(ref, "MinInitRot", vector.zero),
     maxInitRot = utility.getAttribute(ref, "MaxInitRot", vector.zero),
+
+    -- curves
+    speedCurve = utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
+    speedDuration = utility.getAttribute(ref, "Speed_Duration", 0.1),
+    easingCurve = utility.getAttribute(ref, "Easing_Curve", utility.linear_bezier),
   }
 end
 
@@ -66,8 +71,8 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
       table.insert(
         scope,
         tween.fromParams(
-          utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-          utility.getAttribute(ref, "Speed_Duration", 0.1),
+          attrs.speedCurve,
+          attrs.speedDuration,
           function(alpha, deltaTime)
             ref:SetAttribute("SpeedOverride", utility.lerp(common.speedStart, common.speedEnd, alpha))
             return deltaTime
@@ -246,8 +251,8 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
         if common.speedStart ~= common.speedEnd and not ref:GetAttribute("SpeedOverride") then
           speedTween = tween.fromParams(
-            utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-            utility.getAttribute(ref, "Speed_Duration", 0.1),
+            attrs.speedCurve,
+            attrs.speedDuration,
             function(alpha, deltaTime)
               currentSpeed = utility.lerp(common.speedStart, common.speedEnd, alpha)
               return deltaTime
@@ -257,18 +262,26 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
           table.insert(scope, speedTween)
         end
 
+        local function getEffectiveSpeed()
+          return ref:GetAttribute("SpeedOverride") or currentSpeed
+        end
+
+        local function isSpeedTweening()
+          return if speedTween then speedTween.Connected else ref:GetAttribute("SpeedTweening")
+        end
+
         -- Rotation speed tween
         bezier_common.createPropertyTween(scope, ref, "RotSpeed", duration, rotSpeedStart, rotSpeedEnd, function(v)
           currentRotSpeed = v
         end, function()
-          return ref:GetAttribute("SpeedOverride") or currentSpeed
+          return getEffectiveSpeed()
         end, speedTween)
 
         -- main animation
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(ref, "Easing_Curve", utility.linear_bezier),
+            attrs.easingCurve,
             duration,
             function(alpha, deltaTime, elapsed)
               local pos1 = getPos(alpha)
@@ -307,12 +320,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
                 return nil
               end
 
-              local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
+              local speed = getEffectiveSpeed()
               currentSpeed = speed
 
-              if
-                speed == 0 and (if speedTween then not speedTween.Connected else not ref:GetAttribute("SpeedTweening"))
-              then
+              if speed == 0 and not isSpeedTweening() then
                 return nil
               end
 
@@ -360,11 +371,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
                   return nil
                 end
 
-                local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
+                local speed = getEffectiveSpeed()
                 currentSpeed = speed
 
-                return if speed > 0
-                    or (elapsed > 0 and if speedTween then speedTween.Connected else ref:GetAttribute("SpeedTweening"))
+                return if speed > 0 or (elapsed > 0 and isSpeedTweening())
                   then deltaTime * speed
                   else nil
               end, speedTween, scope, utility.RENDER_PRIORITY + scope.depth)
