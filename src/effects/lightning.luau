@@ -524,7 +524,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         local lastVelocity = Vector3.zero
         local lastHeadPos = Vector3.zero
 
-        local effectStartTime = os.clock()
+        local scaledElapsedTime = 0
 
         local isDissipating = false
 
@@ -681,7 +681,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         local function updateSegments(
           headAlpha: number,
           tailAlphaOverride: number?,
-          deltaTime: number,
+          scaledDelta: number,
           allowRefresh: boolean?,
           widthOverride: number?
         )
@@ -693,7 +693,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           -- refresh lightning points
           if allowRefresh ~= false and attrs.refreshRate > 0 then
             local refreshInterval = 1 / attrs.refreshRate
-            lastRefreshTime += deltaTime
+            lastRefreshTime += scaledDelta
 
             if lastRefreshTime >= refreshInterval then
               refreshPoints()
@@ -739,10 +739,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                 then state.initialTransparency
                 else currentTransparency
 
-              local effectAge = currentTime - effectStartTime
-
               local fadeInAlpha = if attrs.fadeInDuration > 0
-                then math.clamp(effectAge / attrs.fadeInDuration, 0, 1)
+                then math.clamp(scaledElapsedTime / attrs.fadeInDuration, 0, 1)
                 else 1
 
               local fadeInEased = 1 - fadeInEasingBezier:getEase(fadeInAlpha).y
@@ -815,8 +813,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           -- track velocity
           local currentHeadPos = getPos(math.min(headAlpha, 1))
 
-          if deltaTime > 0 then
-            lastVelocity = (currentHeadPos - lastHeadPos) / deltaTime
+          if scaledDelta > 0 then
+            lastVelocity = (currentHeadPos - lastHeadPos) / scaledDelta
           end
           lastHeadPos = currentHeadPos
         end
@@ -888,15 +886,18 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
             function(alpha, deltaTime, elapsed)
               dissipateProgress = elapsed
 
+              local scaledDelta = deltaTime * getEffectiveSpeed()
+              scaledElapsedTime += scaledDelta
+
               if attrs.refreshDuringDissipate then
-                currentColorAlpha = (currentColorAlpha + deltaTime / attrs.colorDuration) % 1
-                currentFillColorAlpha = (currentFillColorAlpha + deltaTime / attrs.fillColorDuration) % 1
+                currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
+                currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
               end
 
               local tailOverride = if mode == "Retract" then utility.lerp(dissipateStartTail, 1, alpha) else nil
               local widthOverrideVal = if mode == "Scale" then utility.lerp(dissipateStartWidth, 0, alpha) else nil
 
-              updateSegments(1, tailOverride, deltaTime, attrs.refreshDuringDissipate, widthOverrideVal)
+              updateSegments(1, tailOverride, scaledDelta, attrs.refreshDuringDissipate, widthOverrideVal)
 
               if shapecast() then
                 onFinish()
@@ -940,8 +941,11 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
             utility.getAttribute(ref, "Easing_Curve", utility.linear_bezier),
             duration,
             function(alpha, deltaTime, elapsed)
-              currentColorAlpha = (currentColorAlpha + deltaTime / attrs.colorDuration) % 1
-              currentFillColorAlpha = (currentFillColorAlpha + deltaTime / attrs.fillColorDuration) % 1
+              local scaledDelta = deltaTime * getEffectiveSpeed()
+              scaledElapsedTime += scaledDelta
+
+              currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
+              currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
 
               if common.syncPosition then
                 local newOrigin = bezier_common.getCurrentOriginCFrame(parent, currentOriginCFrame)
@@ -955,7 +959,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                 currentOriginCFrame = newOrigin
               end
 
-              updateSegments(alpha, nil, deltaTime)
+              updateSegments(alpha, nil, scaledDelta)
 
               if shapecast() then
                 onFinish()
@@ -992,10 +996,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                     utility.linear_bezier,
                     common.destroyDelay,
                     function(_, deltaTime)
-                      currentColorAlpha = (currentColorAlpha + deltaTime / attrs.colorDuration) % 1
-                      currentFillColorAlpha = (currentFillColorAlpha + deltaTime / attrs.fillColorDuration) % 1
+                      local scaledDelta = deltaTime * getEffectiveSpeed()
+                      scaledElapsedTime += scaledDelta
 
-                      updateSegments(1, nil, deltaTime, true)
+                      currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
+                      currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
+
+                      updateSegments(1, nil, scaledDelta, true)
 
                       if shapecast() then
                         onFinish()
@@ -1065,8 +1072,11 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
               transitionState = state
 
               tween.timer(lifetime, function(deltaTime, elapsed)
-                currentColorAlpha = (currentColorAlpha + deltaTime / attrs.colorDuration) % 1
-                currentFillColorAlpha = (currentFillColorAlpha + deltaTime / attrs.fillColorDuration) % 1
+                local scaledDelta = deltaTime * getEffectiveSpeed()
+                scaledElapsedTime += scaledDelta
+
+                currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
+                currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
 
                 local distanceTraveled = elapsed * common.projectileSpeed
                 state.distanceTraveled = distanceTraveled
@@ -1081,7 +1091,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                 local shouldRefresh = attrs.refreshRate > 0
 
                 if shouldRefresh then
-                  lastRefreshTime += deltaTime
+                  lastRefreshTime += scaledDelta
 
                   if lastRefreshTime >= 1 / attrs.refreshRate then
                     refreshPoints()
@@ -1093,7 +1103,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                   updatePointsBetweenRefreshes(deltaTime)
                 end
 
-                updateSegments(1, nil, deltaTime, false)
+                updateSegments(1, nil, scaledDelta, false)
 
                 if shapecast() then
                   onFinish()
