@@ -33,7 +33,7 @@ local function readLightningAttributes(ref: Attachment)
 
     -- color
     colorSequence = utility.getAttribute(ref, "Color", ColorSequence.new(Color3.new(1, 1, 1))),
-    colorEasingData = utility.getAttribute(ref, "Color_Easing", utility.linear_bezier),
+    colorEasingData = utility.getAttribute(ref, "Color_Curve", utility.linear_bezier),
     colorDuration = utility.getAttribute(ref, "Color_Duration", 1),
 
     -- transparency
@@ -42,7 +42,7 @@ local function readLightningAttributes(ref: Attachment)
 
     -- fill
     fillColorSequence = utility.getAttribute(ref, "Fill_Color", ColorSequence.new(Color3.new(1, 1, 1))),
-    fillColorEasingData = utility.getAttribute(ref, "Fill_Color_Easing", utility.linear_bezier),
+    fillColorEasingData = utility.getAttribute(ref, "Fill_Color_Curve", utility.linear_bezier),
     fillColorDuration = utility.getAttribute(ref, "Fill_Color_Duration", 1),
     fillTransparencyStart = utility.getAttribute(ref, "Fill_Transparency_Start", 1),
     fillTransparencyEnd = utility.getAttribute(ref, "Fill_Transparency_End", 1),
@@ -68,8 +68,8 @@ local function readLightningAttributes(ref: Attachment)
     dissipateCurveData = utility.getAttribute(ref, "Dissipate_Curve", utility.default_bezier),
 
     -- width
-    widthStart = utility.getAttribute(ref, "Width_Start", 0.3),
-    widthEnd = utility.getAttribute(ref, "Width_End", 0.1),
+    widthStart = utility.getAttribute(ref, "Width_Start", 2),
+    widthEnd = utility.getAttribute(ref, "Width_End", 0.2),
   }
 end
 
