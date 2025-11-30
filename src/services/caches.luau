@@ -38,6 +38,8 @@ function caches.init(scope: { any })
         part.AssemblyLinearVelocity = Vector3.zero
         part.AssemblyAngularVelocity = Vector3.zero
 
+        part.Parent = parent
+
         -- this is probably not very good for performance lol
         -- but I don't think there's currently a more reasonable
         -- way of recycling parts

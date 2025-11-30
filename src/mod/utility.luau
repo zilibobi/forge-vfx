@@ -16,6 +16,7 @@ utility.SERVER_CONTEXT = RunService:IsServer() or utility.PLUGIN_CONTEXT
 utility.DEG_TO_RAD = math.pi / 180
 
 utility.BEZIER_TAG = "BezierParticle"
+utility.LIGHTNING_TAG = "LightningBolt"
 utility.SHOCKWAVE_TAG = "Shockwave"
 utility.SCREENSHAKE_TAG = "CameraShake"
 utility.ENABLED_VFX_TAG = "ConstantVFX"

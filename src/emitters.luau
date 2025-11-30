@@ -2,6 +2,7 @@ local Beam = require("@vfx/beam")
 local Spin = require("@vfx/spin")
 local Mesh = require("@vfx/mesh")
 local Bezier = require("@vfx/bezier")
+local Lightning = require("@vfx/lightning")
 local Screen = require("@vfx/screen")
 local Particle = require("@vfx/particle")
 local CameraShake = require("@vfx/camera_shake")
@@ -123,6 +124,25 @@ function emitters.bezier(obj: Instance, scope: types.scope, skipEnabledCheck: bo
   utility.try(`failed to emit bezier with error: %s`, Bezier.emit, obj, clone, scope, skipEnabledCheck)
 end
 
+function emitters.lightning(obj: Instance, scope: types.scope, skipEnabledCheck: boolean?)
+  local part = obj:FindFirstChildOfClass("Part")
+
+  if not part then
+    return
+  end
+
+  if not skipEnabledCheck and obj:GetAttribute("Enabled") then
+    obj:SetAttribute("Enabled", false)
+  end
+
+  local clone = part:Clone()
+  clone.Locked = true
+
+  table.insert(scope, clone)
+
+  utility.try(`failed to emit lightning with error: %s`, Lightning.emit, obj, clone, scope, skipEnabledCheck)
+end
+
 function emitters.mesh(
   obj: Instance,
   scope: types.scope,
@@ -240,6 +260,11 @@ function emitters.dispatch(
     return
   end
 
+  if obj:HasTag(utility.LIGHTNING_TAG) then
+    emitters.lightning(obj, scope)
+    return
+  end
+
   if className == "Model" then
     if utility.isMeshVFX(obj) then
       emitters.mesh(obj, scope, shared_part_cache, legacyScale)
@@ -289,6 +314,15 @@ emitters.enabled_registry = {
     end,
     emit = function(obj: Instance, scope: types.scope, shared_part_cache: any)
       emitters.bezier(obj, scope, true)
+    end,
+  },
+
+  lightning = {
+    check = function(obj: Instance)
+      return obj:HasTag(utility.LIGHTNING_TAG)
+    end,
+    emit = function(obj: Instance, scope: types.scope, shared_part_cache: any)
+      emitters.lightning(obj, scope, true)
     end,
   },
 } :: { [string]: EnabledEffectConfig }
