@@ -193,6 +193,7 @@ end
 function utility.shouldSkipNested(obj: Instance)
   return obj:IsA("Beam")
     or obj:HasTag(utility.BEZIER_TAG)
+    or obj:HasTag(utility.LIGHTNING_TAG)
     or utility.isMeshVFX(obj)
     or (obj:IsA("BasePart") and utility.findFirstClassWithTag(obj, "Attachment", utility.SHOCKWAVE_TAG) ~= nil)
 end
