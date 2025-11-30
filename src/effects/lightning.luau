@@ -41,11 +41,11 @@ local function readLightningAttributes(ref: Attachment)
     transparencyEnd = utility.getAttribute(ref, "Transparency_End", 0),
 
     -- fill
-    fillColorSequence = utility.getAttribute(ref, "FillColor", ColorSequence.new(Color3.new(1, 1, 1))),
-    fillColorEasingData = utility.getAttribute(ref, "FillColor_Easing", utility.linear_bezier),
-    fillColorDuration = utility.getAttribute(ref, "FillColor_Duration", 1),
-    fillTransparencyStart = utility.getAttribute(ref, "FillTransparency_Start", 1),
-    fillTransparencyEnd = utility.getAttribute(ref, "FillTransparency_End", 1),
+    fillColorSequence = utility.getAttribute(ref, "Fill_Color", ColorSequence.new(Color3.new(1, 1, 1))),
+    fillColorEasingData = utility.getAttribute(ref, "Fill_Color_Easing", utility.linear_bezier),
+    fillColorDuration = utility.getAttribute(ref, "Fill_Color_Duration", 1),
+    fillTransparencyStart = utility.getAttribute(ref, "Fill_Transparency_Start", 1),
+    fillTransparencyEnd = utility.getAttribute(ref, "Fill_Transparency_End", 1),
     fillDepthMode = utility.getEnumAttribute(ref, "FillDepthMode", "Occluded", { "AlwaysOnTop", "Occluded" }),
 
     -- fade-in
@@ -1042,13 +1042,24 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
               local transitionBuffer = boltLength * 0.3
 
+              -- preserve existing jaggedness offsets from bezier phase
+              local existingOffsets = table.create(attrs.segments + 1)
+
+              for j = 0, attrs.segments do
+                local t = j / attrs.segments
+                local bezierT = curvedTailT + t * curvedLengthT
+                local basePos = getPos(bezierT)
+
+                existingOffsets[j + 1] = lightningPoints[j + 1] - basePos
+              end
+
               local state: TransitionState = {
                 curvedTailT = curvedTailT,
                 curvedLengthT = curvedLengthT,
                 boltLength = boltLength,
                 transitionBuffer = transitionBuffer,
                 distanceTraveled = 0,
-                jaggedOffsets = nil,
+                jaggedOffsets = existingOffsets,
               }
 
               transitionState = state
