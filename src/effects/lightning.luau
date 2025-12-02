@@ -450,7 +450,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           return false
         end
 
-        local emitOnFinish = scope.effects.prepareEmitOnFinish(refObj, scope)
+        local emitOnFinish = if attrs.nestedEffectMode ~= "None"
+          then scope.effects.prepareEmitOnFinish(refObj, scope)
+          else nil
+
+        -- track segments that need nested effect emission
+        local nestedSegments = {}
+        local nestedEffectChildren = {}
 
         -- create segment parts
         for j = 1, attrs.segments do
@@ -477,16 +483,29 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
             for _, child in clone:GetChildren() do
               child.Parent = obj
+
+              if attrs.nestedEffectMode == "Head" then
+                table.insert(nestedEffectChildren, child)
+              end
             end
 
             clone:Destroy()
 
-            local env = scope.effects.emitNested(obj, scope.depth + 1)
-            table.insert(promises, env.Finished)
+            table.insert(nestedSegments, j)
           end
 
           segmentRealParts[j] = obj
           segmentCacheIds[j] = cacheId
+        end
+
+        -- for Head mode, reparent children to segment 1 initially
+        local currentNestedParentIndex = nil
+
+        if attrs.nestedEffectMode == "Head" and #nestedEffectChildren > 0 then
+          for _, child in nestedEffectChildren do
+            child.Parent = segmentRealParts[1]
+          end
+          currentNestedParentIndex = 1
         end
 
         -- cleanup
@@ -520,6 +539,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
         local lightningPoints =
           generateLightningPoints(rng, attrs.segments, getPos, attrs.jaggedness, attrs.offsetScale)
+
+        -- emit nested effects
+        for _, j in nestedSegments do
+          local emitFrom = if attrs.nestedEffectMode == "Head" then 1 else j
+          local env = scope.effects.emitNested(segmentRealParts[emitFrom], scope.depth + 1)
+          table.insert(promises, env.Finished)
+        end
 
         local lastVelocity = Vector3.zero
         local lastHeadPos = Vector3.zero
@@ -578,13 +604,16 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           end
         end
 
+        local function getHeadSegmentIndex(): number
+          return math.clamp(math.ceil(currentHeadAlpha * attrs.segments), 1, attrs.segments)
+        end
+
         local function shapecast()
           if not common.hitboxEnabled then
             return false
           end
 
-          local headSegmentIndex = math.clamp(math.ceil(currentHeadAlpha * attrs.segments), 1, attrs.segments)
-          local headSegment = segmentRealParts[headSegmentIndex]
+          local headSegment = segmentRealParts[getHeadSegmentIndex()]
 
           if headSegment and headSegment.Transparency < 1 then
             local result = workspace:GetPartsInPart(headSegment, hitboxParams)
@@ -801,12 +830,28 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
             highlight.FillTransparency = currentFillTransparency
           end
 
+          -- reparent nested effect children to current head segment (Head mode)
+          if currentNestedParentIndex then
+            local headIndex = getHeadSegmentIndex()
+
+            if headIndex ~= currentNestedParentIndex then
+              local targetSegment = segmentRealParts[headIndex]
+
+              for _, child in nestedEffectChildren do
+                child.Parent = targetSegment
+              end
+
+              currentNestedParentIndex = headIndex
+            end
+          end
+
           -- track velocity
           local currentHeadPos = getPos(math.min(headAlpha, 1))
 
           if scaledDelta > 0 then
             lastVelocity = (currentHeadPos - lastHeadPos) / scaledDelta
           end
+
           lastHeadPos = currentHeadPos
         end
 
@@ -900,7 +945,9 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
           local headAlpha = currentHeadAlpha
 
-          local finishEnv = scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1)
+          local finishEnv = if emitOnFinish
+            then scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1)
+            else nil
 
           local function onDissipationComplete()
             if finished then
@@ -909,9 +956,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
             finished = true
 
-            finishEnv.Finished:finally(function()
+            if finishEnv then
+              finishEnv.Finished:finally(function()
+                resolve()
+              end)
+            else
               resolve()
-            end)
+            end
           end
 
           if attrs.dissipateMode ~= "None" then
