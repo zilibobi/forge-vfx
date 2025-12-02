@@ -342,8 +342,6 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
                 end
               )
             )
-          else
-            part.Transparency = startTp
           end
 
           local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)

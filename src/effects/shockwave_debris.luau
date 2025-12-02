@@ -157,8 +157,6 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
     part.Anchored = false
     part.CanCollide = true
 
-    part.Transparency = tpStart
-
     if part.CollisionGroup == "Default" then
       part.CollisionGroup = "ForgeDebris"
     end
@@ -177,6 +175,8 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
       part.Material = iref.Material
       part.Color = iref.Color
       part.Transparency = iref.Transparency
+    else
+      part.Transparency = tpStart
     end
 
     table.insert(scope, function()
@@ -214,6 +214,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
     task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
       local startSize = part.Size
+      local startTp = part.Transparency
 
       if startSize ~= size * sizeScaleEnd then
         table.insert(
@@ -225,16 +226,14 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
         )
       end
 
-      if tpStart ~= tpEnd then
+      if startTp ~= tpEnd then
         table.insert(
           scope,
           tween.fromParams(tpCurve, tpDuration, function(alpha, deltaTime)
-            part.Transparency = utility.lerp(tpStart, tpEnd, alpha)
+            part.Transparency = utility.lerp(startTp, tpEnd, alpha)
             return deltaTime
           end)
         )
-      else
-        part.Transparency = tpStart
       end
 
       local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)

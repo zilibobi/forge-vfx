@@ -236,8 +236,6 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
             end
           )
         )
-      else
-        part.Transparency = startTp
       end
 
       local env = scope.effects.emitOnFinish(emitOnFinish, part, scope.depth + 1)
