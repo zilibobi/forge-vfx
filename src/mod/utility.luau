@@ -385,6 +385,44 @@ function utility.getEnumAttribute<T>(obj: Instance, name: string, default: T, en
   return value
 end
 
+function utility.getTransformedOriginExtents(parent: Instance)
+  local originCFrame, originSize = CFrame.identity, vector.zero
+
+  if parent:IsA("BasePart") then
+    originSize = parent.Size
+    originCFrame = parent.CFrame
+  elseif parent:IsA("Attachment") then
+    originCFrame = parent.WorldCFrame
+
+    local newParent = parent.Parent
+
+    -- step 1: find the full origin cframe by walking up the tree, and processing the upmost attachment
+    local positionScale = utility.getAttribute(parent, "PositionScale", vector.zero, true)
+
+    if newParent then
+      if newParent:IsA("BasePart") and positionScale ~= vector.zero then
+        local offset = (newParent.Size / 2) * positionScale
+        originCFrame = originCFrame + offset
+      elseif newParent:IsA("Attachment") then
+        originCFrame = utility.getTransformedOriginExtents(newParent)
+      end
+    end
+
+    -- step 2: apply rotation on final origin cframe
+    local overrideWorldRotation = utility.getAttribute(parent, "OverrideWorldRotation", false, true)
+    local worldRotation = utility.getAttribute(parent, "WorldRotation", vector.zero, true)
+
+    if overrideWorldRotation then
+      local rotRad = worldRotation * utility.DEG_TO_RAD
+      local position = originCFrame.Position
+
+      originCFrame = CFrame.new(position) * CFrame.fromOrientation(rotRad.X, rotRad.Y, rotRad.Z)
+    end
+  end
+
+  return originCFrame, originSize
+end
+
 function utility.getMeshDecals(ref: Model, start: BasePart)
   local legacy_isFlipbook = utility.getAttribute(ref, "Flipbook", false, true)
 

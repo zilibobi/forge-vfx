@@ -160,21 +160,6 @@ export type EmissionConfig = {
   emissionDirection: Enum.NormalId,
 }
 
-function bezierCommon.getOriginInfo(parent: Instance)
-  local originSize: Vector3?
-  local originCFrame: CFrame?
-
-  if parent:IsA("BasePart") then
-    originSize = parent.Size
-    originCFrame = parent.CFrame
-  elseif parent:IsA("Attachment") then
-    originSize = Vector3.zero
-    originCFrame = parent.WorldCFrame
-  end
-
-  return originSize, originCFrame
-end
-
 function bezierCommon.calculateEmissionCFrame(
   originCFrame: CFrame,
   originSize: Vector3,

@@ -65,7 +65,7 @@ function spin.emit(ref: Model, scope: types.scope)
   local parent = ref:FindFirstAncestorOfClass("Attachment") or ref:FindFirstAncestorWhichIsA("BasePart")
 
   table.insert(scope, function()
-    ref:PivotTo(parent and (parent:IsA("Attachment") and parent.WorldCFrame or parent.CFrame) or originalPivot)
+    ref:PivotTo(parent and utility.getTransformedOriginExtents(parent) or originalPivot)
     ref:ScaleTo(originalScale)
   end)
 
@@ -75,9 +75,8 @@ function spin.emit(ref: Model, scope: types.scope)
     local alpha = math.clamp(elapsed / duration, 0, 1)
 
     local r = rotation * alpha
-    local cf = (
-      if parent and sync then (parent:IsA("Attachment") and parent.WorldCFrame or parent.CFrame) else originalPivot
-    ) * CFrame.fromOrientation(r.x, r.y, r.z)
+    local cf = (if parent and sync then utility.getTransformedOriginExtents(parent) else originalPivot)
+      * CFrame.fromOrientation(r.x, r.y, r.z)
 
     ref:PivotTo(cf)
 

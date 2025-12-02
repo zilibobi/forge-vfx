@@ -150,11 +150,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   local parent = ref:FindFirstAncestorOfClass("Attachment") or start
   local realObj = typeof(obj) == "table" and obj._getReal() or obj
 
-  local function getOrigin()
-    return parent:IsA("Attachment") and parent.WorldCFrame or parent.CFrame
-  end
-
-  local origin = getOrigin()
+  local origin = utility.getTransformedOriginExtents(parent)
   local goalCFrameOffset = start.CFrame:ToObjectSpace(goal.CFrame)
 
   local currentSpeed = speedStart
@@ -170,7 +166,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   )
 
   local function updatePos(deltaTime: number)
-    local o = sync and getOrigin() or origin
+    local o = sync and utility.getTransformedOriginExtents(parent) or origin
     local add = initRot:Sign() * currentRotSpeed * deltaTime
 
     currentRot *= CFrame.fromOrientation(add.x, add.y, add.z)

@@ -103,7 +103,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
     return
   end
 
-  local originSize, originCFrame = bezier_common.getOriginInfo(parent)
+  local originCFrame, originSize = utility.getTransformedOriginExtents(parent)
 
   if not originCFrame then
     return
@@ -212,11 +212,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
           end
 
           if common.syncPosition then
-            local initOrigin = bezier_common.getCurrentOriginCFrame(parent, originCFrame)
+            local initOrigin = utility.getTransformedOriginExtents(parent, originCFrame)
             local initPartPos = objAbstr.CFrame
 
             local function updatePos()
-              objAbstr.CFrame = bezier_common.getCurrentOriginCFrame(parent, originCFrame)
+              objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
                 * initOrigin:ToObjectSpace(initPartPos)
             end
 
@@ -250,14 +250,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
         local speedTween
 
         if common.speedStart ~= common.speedEnd and not ref:GetAttribute("SpeedOverride") then
-          speedTween = tween.fromParams(
-            attrs.speedCurve,
-            attrs.speedDuration,
-            function(alpha, deltaTime)
-              currentSpeed = utility.lerp(common.speedStart, common.speedEnd, alpha)
-              return deltaTime
-            end
-          )
+          speedTween = tween.fromParams(attrs.speedCurve, attrs.speedDuration, function(alpha, deltaTime)
+            currentSpeed = utility.lerp(common.speedStart, common.speedEnd, alpha)
+            return deltaTime
+          end)
 
           table.insert(scope, speedTween)
         end
@@ -305,7 +301,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
               newCF *= currentRot
 
               if common.syncPosition then
-                objAbstr.CFrame = bezier_common.getCurrentOriginCFrame(parent, originCFrame)
+                objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
                   * originCFrame:ToObjectSpace(newCF)
               else
                 objAbstr.CFrame = newCF
@@ -355,11 +351,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
               lastVelocity = dir * common.projectileSpeed
 
               local projectileOrigin = obj.Position
-              local originCFrameAtProjectileInit = bezier_common.getCurrentOriginCFrame(parent, originCFrame)
+              local originCFrameAtProjectileInit = utility.getTransformedOriginExtents(parent, originCFrame)
 
               tween.timer(lifetime, function(deltaTime, elapsed)
                 if common.syncPosition then
-                  objAbstr.CFrame = bezier_common.getCurrentOriginCFrame(parent, originCFrame)
+                  objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
                     * originCFrameAtProjectileInit:ToObjectSpace(CFrame.new(projectileOrigin + lastVelocity * elapsed))
                 else
                   objAbstr.CFrame = CFrame.new(projectileOrigin + lastVelocity * elapsed) * obj.CFrame.Rotation
@@ -374,9 +370,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
                 local speed = getEffectiveSpeed()
                 currentSpeed = speed
 
-                return if speed > 0 or (elapsed > 0 and isSpeedTweening())
-                  then deltaTime * speed
-                  else nil
+                return if speed > 0 or (elapsed > 0 and isSpeedTweening()) then deltaTime * speed else nil
               end, speedTween, scope, utility.RENDER_PRIORITY + scope.depth)
 
               if not didHit then

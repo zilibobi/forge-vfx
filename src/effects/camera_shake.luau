@@ -165,13 +165,10 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
     local origin = ref:FindFirstAncestorOfClass("Attachment") or ref:FindFirstAncestorWhichIsA("BasePart")
 
     if origin then
-      local alpha = 1
-        - math.clamp(
-          (camera.CFrame.Position - (origin:IsA("Attachment") and origin.WorldPosition or origin.Position)).Magnitude
-            / falloff,
-          0,
-          1
-        )
+      local originCFrame = utility.getTransformedOriginExtents(origin)
+      local originPosition = originCFrame and originCFrame.Position or origin.Position
+
+      local alpha = 1 - math.clamp((camera.CFrame.Position - originPosition).Magnitude / falloff, 0, 1)
 
       pos *= alpha
       rot *= alpha

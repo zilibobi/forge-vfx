@@ -85,6 +85,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
   task.wait(emitDelay)
 
   local promises = {}
+  local originCFrame = utility.getTransformedOriginExtents(origin)
 
   for i = 0, segments - 1 do
     local angle = i / segments * math.pi * 2
@@ -92,11 +93,8 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
     local x = radius * math.cos(angle)
     local y = radius * math.sin(angle)
 
-    local result = workspace:Raycast(
-      (origin.WorldCFrame * CFrame.new(x, 0, y)).Position,
-      origin.WorldCFrame:VectorToWorldSpace(raydir),
-      params
-    )
+    local result =
+      workspace:Raycast((originCFrame * CFrame.new(x, 0, y)).Position, originCFrame:VectorToWorldSpace(raydir), params)
 
     if not result then
       continue
@@ -147,7 +145,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
     local rx = -math.cos(angle)
     local rz = -math.sin(angle)
 
-    local dir = origin.WorldCFrame:VectorToWorldSpace(Vector3.new(rx, 0, rz))
+    local dir = originCFrame:VectorToWorldSpace(Vector3.new(rx, 0, rz))
     local right = dir:Cross(result.Normal).Unit
 
     local rotCF = CFrame.fromMatrix(result.Position, right, result.Normal)

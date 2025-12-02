@@ -116,7 +116,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
 
   local promises = {}
 
-  local start = origin.WorldCFrame
+  local start = utility.getTransformedOriginExtents(origin)
 
   local last = 0
   local total = 0
@@ -189,12 +189,13 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
         local alpha = 1 - bezier:getEase(t).y
 
         if sync then
-          start = origin.WorldCFrame
+          start = utility.getTransformedOriginExtents(origin)
         end
 
+        local originCFrame = utility.getTransformedOriginExtents(origin)
         local result = workspace:Raycast(
           start.Position + start:VectorToWorldSpace(direction) * lineLength * alpha,
-          origin.WorldCFrame:VectorToWorldSpace(raydir),
+          originCFrame:VectorToWorldSpace(raydir),
           params
         )
 
@@ -250,7 +251,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
         local rx = -math.cos(angle)
         local rz = -math.sin(angle)
 
-        local dir = origin.WorldCFrame:VectorToWorldSpace(Vector3.new(rx, 0, rz))
+        local dir = originCFrame:VectorToWorldSpace(Vector3.new(rx, 0, rz))
         local right = dir:Cross(result.Normal).Unit
 
         local rotCF = CFrame.fromMatrix(result.Position, right, result.Normal)

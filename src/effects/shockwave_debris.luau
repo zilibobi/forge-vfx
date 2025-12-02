@@ -113,8 +113,11 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
   ref.CanCollide = false
 
+  local originCFrame = utility.getTransformedOriginExtents(origin)
+  local originPosition = originCFrame.Position
+
   if params then
-    local parts = workspace:GetPartBoundsInRadius(origin.WorldPosition, inheritRadius, params)
+    local parts = workspace:GetPartBoundsInRadius(originPosition, inheritRadius, params)
 
     for _, p in parts do
       if p.Transparency == 1 then
@@ -160,7 +163,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
       part.CollisionGroup = "ForgeDebris"
     end
 
-    part.CFrame = CFrame.new(origin.WorldPosition)
+    part.CFrame = CFrame.new(originPosition)
 
     local size = Vector3.new(
       rng:NextNumber(minSize.X, maxSize.X),
@@ -190,16 +193,16 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
     table.insert(physicsParts, realPart)
 
-    part.AssemblyLinearVelocity = origin.WorldCFrame:VectorToWorldSpace(part.AssemblyLinearVelocity)
+    part.AssemblyLinearVelocity = originCFrame:VectorToWorldSpace(part.AssemblyLinearVelocity)
 
     local relDir = utility.randomUnitVector(minDir, maxDir)
-    local worldDir = origin.WorldCFrame:VectorToWorldSpace(relDir)
+    local worldDir = originCFrame:VectorToWorldSpace(relDir)
 
     part:ApplyImpulse(
       part.AssemblyMass
         * utility.getImpulseForce(
-          origin.WorldPosition,
-          origin.WorldPosition + worldDir.Unit * rng:NextNumber(linmag.Min, linmag.Max),
+          originPosition,
+          originPosition + worldDir.Unit * rng:NextNumber(linmag.Min, linmag.Max),
           rng:NextNumber(airtime.Min, airtime.Max)
         )
     )
