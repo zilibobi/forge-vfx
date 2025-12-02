@@ -343,7 +343,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
     return
   end
 
-  local originSize, originCFrame = bezier_common.getOriginInfo(parent)
+  local originCFrame, originSize = utility.getTransformedOriginExtents(parent)
 
   if not originCFrame then
     return
@@ -450,6 +450,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           return false
         end
 
+        local emitOnFinish = scope.effects.prepareEmitOnFinish(refObj, scope)
+
         -- create segment parts
         for j = 1, attrs.segments do
           local cacheId = utility.getRandomId()
@@ -501,10 +503,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         end)
 
         local effectContainer = containerModel or refObj
-        local emitOnFinish = scope.effects.prepareEmitOnFinish(refObj, scope)
 
         -- animation state
-        local didHit = false
         local finished = false
 
         local currentSpeed = common.speedStart
@@ -527,6 +527,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         local scaledElapsedTime = 0
 
         local isDissipating = false
+
+        local currentHeadAlpha = 0
 
         local dissipateProgress = 0
         local dissipateStartTail = 0
@@ -576,26 +578,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           end
         end
 
-        local function onFinish()
-          if finished then
-            return
-          end
-
-          finished = true
-
-          local finishEnv = scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1)
-
-          finishEnv.Finished:finally(function()
-            resolve()
-          end)
-        end
-
         local function shapecast()
           if not common.hitboxEnabled then
             return false
           end
 
-          local headSegment = segmentRealParts[attrs.segments]
+          local headSegmentIndex = math.clamp(math.ceil(currentHeadAlpha * attrs.segments), 1, attrs.segments)
+          local headSegment = segmentRealParts[headSegmentIndex]
 
           if headSegment and headSegment.Transparency < 1 then
             local result = workspace:GetPartsInPart(headSegment, hitboxParams)
@@ -686,6 +675,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           widthOverride: number?
         )
           local currentTime = os.clock()
+
+          currentHeadAlpha = headAlpha
 
           local tailAlpha = tailAlphaOverride or math.max(0, headAlpha - currentLength)
           local effectiveWidth = widthOverride or currentWidth
@@ -870,67 +861,81 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
         -- dissipation handler
         local function handleDissipation(
+          headAlpha: number,
           startTail: number,
           startWidth: number,
           curveData: string,
           dissipationDuration: number,
-          mode: string
+          mode: string,
+          onComplete: () -> ()
         )
           isDissipating = true
           dissipateStartTail = startTail
           dissipateStartWidth = startWidth
 
-          tween.fromParams(
-            curveData,
-            dissipationDuration,
-            function(alpha, deltaTime, elapsed)
-              dissipateProgress = elapsed
+          tween.fromParams(curveData, dissipationDuration, function(alpha, deltaTime, elapsed)
+            dissipateProgress = elapsed
 
-              local scaledDelta = deltaTime * getEffectiveSpeed()
-              scaledElapsedTime += scaledDelta
+            local scaledDelta = deltaTime * getEffectiveSpeed()
+            scaledElapsedTime += scaledDelta
 
-              if attrs.refreshDuringDissipate then
-                currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
-                currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
-              end
+            if attrs.refreshDuringDissipate then
+              currentColorAlpha = (currentColorAlpha + scaledDelta / attrs.colorDuration) % 1
+              currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
+            end
 
-              local tailOverride = if mode == "Retract" then utility.lerp(dissipateStartTail, 1, alpha) else nil
-              local widthOverrideVal = if mode == "Scale" then utility.lerp(dissipateStartWidth, 0, alpha) else nil
+            local tailOverride = if mode == "Retract" then utility.lerp(dissipateStartTail, headAlpha, alpha) else nil
+            local widthOverrideVal = if mode == "Scale" then utility.lerp(dissipateStartWidth, 0, alpha) else nil
 
-              updateSegments(1, tailOverride, scaledDelta, attrs.refreshDuringDissipate, widthOverrideVal)
+            updateSegments(headAlpha, tailOverride, scaledDelta, attrs.refreshDuringDissipate, widthOverrideVal)
 
-              if shapecast() then
-                onFinish()
-                didHit = true
-                return nil
-              end
-
-              return getSpeedDelta(deltaTime, true)
-            end,
-            speedTween,
-            function()
-              if not didHit then
-                onFinish()
-              end
-            end,
-            true,
-            utility.RENDER_PRIORITY + scope.depth
-          )
+            return getSpeedDelta(deltaTime, true)
+          end, speedTween, onComplete, true, utility.RENDER_PRIORITY + scope.depth)
         end
 
         local function startDissipation()
+          if isDissipating or finished then
+            return
+          end
+
+          local headAlpha = currentHeadAlpha
+
+          local finishEnv = scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1)
+
+          local function onDissipationComplete()
+            if finished then
+              return
+            end
+
+            finished = true
+
+            finishEnv.Finished:finally(function()
+              resolve()
+            end)
+          end
+
           if attrs.dissipateMode ~= "None" then
             handleDissipation(
-              math.max(0, 1 - currentLength),
+              headAlpha,
+              math.max(0, headAlpha - currentLength),
               currentWidth,
               attrs.dissipateCurveData,
               attrs.dissipateDuration,
-              attrs.dissipateMode
+              attrs.dissipateMode,
+              onDissipationComplete
             )
           elseif attrs.fadeOutDuration > 0 then
-            handleDissipation(0, currentWidth, attrs.fadeOutCurveData, attrs.fadeOutDuration, "None")
+            handleDissipation(
+              headAlpha,
+              math.max(0, headAlpha - currentLength),
+              currentWidth,
+              attrs.fadeOutCurveData,
+              attrs.fadeOutDuration,
+              "None",
+              onDissipationComplete
+            )
           else
-            onFinish()
+            onDissipationComplete()
           end
         end
 
@@ -948,7 +953,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
               currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
 
               if common.syncPosition then
-                local newOrigin = bezier_common.getCurrentOriginCFrame(parent, currentOriginCFrame)
+                local newOrigin = utility.getTransformedOriginExtents(parent, currentOriginCFrame)
                 local offset = newOrigin * currentOriginCFrame:Inverse()
 
                 for j = 1, #lightningPoints do
@@ -962,8 +967,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
               updateSegments(alpha, nil, scaledDelta)
 
               if shapecast() then
-                onFinish()
-                didHit = true
+                startDissipation()
                 return nil
               end
 
@@ -976,16 +980,13 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
               if (common.projectileEnabled and alpha * duration < lifetime) or not common.projectileEnabled then
                 return speedDelta
               else
-                onFinish()
+                startDissipation()
                 return nil
               end
             end,
             speedTween,
-            function(organic)
-              if didHit then
-                if organic then
-                  onFinish()
-                end
+            function()
+              if isDissipating or finished then
                 return
               end
 
@@ -1005,8 +1006,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                       updateSegments(1, nil, scaledDelta, true)
 
                       if shapecast() then
-                        onFinish()
-                        didHit = true
+                        startDissipation()
                         return nil
                       end
 
@@ -1014,9 +1014,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                     end,
                     speedTween,
                     function()
-                      if not didHit then
-                        startDissipation()
-                      end
+                      startDissipation()
                     end,
                     true,
                     utility.RENDER_PRIORITY + scope.depth
@@ -1106,8 +1104,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                 updateSegments(1, nil, scaledDelta, false)
 
                 if shapecast() then
-                  onFinish()
-                  didHit = true
+                  startDissipation()
                   return nil
                 end
 
@@ -1118,9 +1115,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
                 return getSpeedDelta(deltaTime, true)
               end, speedTween, scope, utility.RENDER_PRIORITY + scope.depth)
 
-              if not didHit then
-                startDissipation()
-              end
+              startDissipation()
             end,
             true,
             utility.RENDER_PRIORITY + scope.depth
