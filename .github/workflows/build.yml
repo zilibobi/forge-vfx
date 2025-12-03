@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for changelog generation
 
       - name: Install rokit
         run: |
@@ -21,14 +23,120 @@ jobs:
       - name: Install toolkit
         run: rokit install --no-trust-check
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the current tag
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1)
+
+          # If no previous tag, use first commit
+          if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+
+          # Generate changelog with commit links
+          CHANGELOG=$(git log ${PREVIOUS_TAG}..${CURRENT_TAG} \
+            --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" \
+            --no-merges)
+
+          # Add full changelog link for GitHub release
+          FULL_CHANGELOG="## Commits
+
+          $CHANGELOG
+
+          [**Full Changelog**](https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${CURRENT_TAG})"
+
+          # Save full changelog for GitHub release
+          echo "$FULL_CHANGELOG" > CHANGELOG.md
+
+          # Save commits only for Discord
+          echo "$CHANGELOG" > CHANGELOG_DISCORD.md
+
+      - name: Convert aliases to directory
+        run: rojo-build-noalias --convert-to ./build-output
+
       - name: Build project
-        run: rojo build -o ForgeVFX.rbxm
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          rojo build ./build-output -o "forge-vfx@${CURRENT_TAG}.rbxm"
+
+      - name: Authenticate with Wally
+        run: wally login --token "${{ secrets.WALLY_AUTH_TOKEN }}"
+
+      - name: Publish to Wally
+        run: |
+          cd build-output
+          wally publish
 
       - name: Release
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          echo "args=./forge-vfx@${CURRENT_TAG}.rbxm" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
         uses: anton-yurchenko/git-release@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANGELOG_FILE: none
+          CHANGELOG_FILE: CHANGELOG.md
         with:
-          args: |
-            ./ForgeVFX.rbxm
+          args: ${{ env.args }}
+
+      - name: Send Discord notification
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          # Remove 'v' prefix for version
+          VERSION="${CURRENT_TAG#v}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${CURRENT_TAG}"
+
+          # Get previous tag for compare link
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1)
+          if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          COMPARE_URL="https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${CURRENT_TAG}"
+
+          # Prepare changelog for JSON (escape quotes and newlines) - use Discord version
+          CHANGELOG_JSON=$(cat CHANGELOG_DISCORD.md | jq -Rs .)
+
+          # Prepare wally installation code
+          WALLY_CODE="ForgeVFX = \"zilibobi/forge-vfx@${VERSION}\""
+
+          # Prepare Discord embed JSON
+          EMBED_JSON=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "${CURRENT_TAG}",
+              "description": "A new version of the emit module has been released!",
+              "color": 12888039,
+              "fields": [
+                {
+                  "name": "Changelog",
+                  "value": ${CHANGELOG_JSON}
+                },
+                {
+                  "name": "Wally Installation",
+                  "value": "\`\`\`toml\n${WALLY_CODE}\n\`\`\`"
+                },
+                {
+                  "name": "Links",
+                  "value": "[GitHub Release](${RELEASE_URL})\n[Wally Package](https://wally.run/package/zilibobi/forge-vfx?version=${VERSION})\n[Full Changelog](${COMPARE_URL})"
+                }
+              ],
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
+              "footer": {
+                "text": "ForgeVFX Release"
+              }
+            }]
+          }
+          EOF
+          )
+
+          # Send webhook with file attachment (with versioned filename)
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -F "payload_json=${EMBED_JSON}" \
+            -F "file=@./forge-vfx@${CURRENT_TAG}.rbxm"
