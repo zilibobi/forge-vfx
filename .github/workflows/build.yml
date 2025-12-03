@@ -9,6 +9,8 @@ jobs:
   build:
     name: Create release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,6 +18,8 @@ jobs:
           fetch-depth: 0 # Fetch all history for changelog generation
 
       - name: Install rokit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
           echo "$HOME/.rokit/bin" >> $GITHUB_PATH
@@ -29,18 +33,18 @@ jobs:
           # Get the current tag
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
 
-          # Get the previous tag
-          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1)
+          # Get the previous tag (exclude current tag from list)
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -1)
 
           # If no previous tag, use first commit
-          if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+          if [ -z "$PREVIOUS_TAG" ]; then
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
 
           echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
 
-          # Generate changelog with commit links
-          CHANGELOG=$(git log ${PREVIOUS_TAG}..${CURRENT_TAG} \
+          # Generate changelog with commit links (exclude the previous tag's commit)
+          CHANGELOG=$(git log ${PREVIOUS_TAG}..${CURRENT_TAG}^ \
             --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" \
             --no-merges)
 
@@ -65,6 +69,16 @@ jobs:
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
           rojo build ./build-output -o "forge-vfx@${CURRENT_TAG}.rbxm"
 
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "${CURRENT_TAG}" \
+            "./forge-vfx@${CURRENT_TAG}.rbxm" \
+            --title "${CURRENT_TAG}" \
+            --notes-file CHANGELOG.md
+
       - name: Authenticate with Wally
         run: wally login --token "${{ secrets.WALLY_AUTH_TOKEN }}"
 
@@ -72,19 +86,6 @@ jobs:
         run: |
           cd build-output
           wally publish
-
-      - name: Release
-        run: |
-          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-          echo "args=./forge-vfx@${CURRENT_TAG}.rbxm" >> $GITHUB_ENV
-
-      - name: Create GitHub Release
-        uses: anton-yurchenko/git-release@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANGELOG_FILE: CHANGELOG.md
-        with:
-          args: ${{ env.args }}
 
       - name: Send Discord notification
         run: |
@@ -94,49 +95,56 @@ jobs:
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${CURRENT_TAG}"
 
           # Get previous tag for compare link
-          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1)
-          if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -1)
+          if [ -z "$PREVIOUS_TAG" ]; then
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
           COMPARE_URL="https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${CURRENT_TAG}"
 
-          # Prepare changelog for JSON (escape quotes and newlines) - use Discord version
+          # Prepare changelog for JSON
           CHANGELOG_JSON=$(cat CHANGELOG_DISCORD.md | jq -Rs .)
 
           # Prepare wally installation code
-          WALLY_CODE="ForgeVFX = \"zilibobi/forge-vfx@${VERSION}\""
+          WALLY_CODE="ForgeVFX = \\\"zilibobi/forge-vfx@${VERSION}\\\""
 
-          # Prepare Discord embed JSON
-          EMBED_JSON=$(cat <<EOF
-          {
-            "embeds": [{
-              "title": "${CURRENT_TAG}",
-              "description": "A new version of the emit module has been released!",
-              "color": 12888039,
-              "fields": [
-                {
-                  "name": "Changelog",
-                  "value": ${CHANGELOG_JSON}
-                },
-                {
-                  "name": "Wally Installation",
-                  "value": "\`\`\`toml\n${WALLY_CODE}\n\`\`\`"
-                },
-                {
-                  "name": "Links",
-                  "value": "[GitHub Release](${RELEASE_URL})\n[Wally Package](https://wally.run/package/zilibobi/forge-vfx?version=${VERSION})\n[Full Changelog](${COMPARE_URL})"
+          # Create JSON file for proper formatting
+          jq -n \
+            --arg title "${CURRENT_TAG}" \
+            --arg description "A new version of the emit module has been released!" \
+            --argjson color 12888039 \
+            --argjson changelog "${CHANGELOG_JSON}" \
+            --arg wally_code "${WALLY_CODE}" \
+            --arg release_url "${RELEASE_URL}" \
+            --arg wally_url "https://wally.run/package/zilibobi/forge-vfx?version=${VERSION}" \
+            --arg compare_url "${COMPARE_URL}" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $description,
+                color: $color,
+                fields: [
+                  {
+                    name: "Changelog",
+                    value: $changelog
+                  },
+                  {
+                    name: "Wally Installation",
+                    value: ("```toml\n" + $wally_code + "\n```")
+                  },
+                  {
+                    name: "Links",
+                    value: ("[GitHub Release](" + $release_url + ")\n[Wally Package](" + $wally_url + ")\n[Full Changelog](" + $compare_url + ")")
+                  }
+                ],
+                timestamp: $timestamp,
+                footer: {
+                  text: "ForgeVFX Release"
                 }
-              ],
-              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
-              "footer": {
-                "text": "ForgeVFX Release"
-              }
-            }]
-          }
-          EOF
-          )
+              }]
+            }' > discord_payload.json
 
           # Send webhook with file attachment (with versioned filename)
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
-            -F "payload_json=${EMBED_JSON}" \
+            -F "payload_json=@discord_payload.json" \
             -F "file=@./forge-vfx@${CURRENT_TAG}.rbxm"
