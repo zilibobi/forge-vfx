@@ -1,2 +1,6 @@
 sourcemap.json
 .dist
+
+*.rbxm
+
+__pycache__
