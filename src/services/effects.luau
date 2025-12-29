@@ -60,48 +60,50 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
   local rootPromises = {}
 
   local function queryAndEmitDescendants(obj: Instance, baseDepth: number): { any }
-    local allDescendants = obj:QueryDescendants(EffectSelectors)
+    local allDesc = obj:QueryDescendants(EffectSelectors)
+    local totalDesc = #allDesc
 
-    if #allDescendants == 0 then
+    if totalDesc == 0 then
       return {}
     end
 
-    local nestedEffectHandlers = {}
+    local promises = table.create(totalDesc)
 
-    for _, desc in allDescendants do
-      if utility.shouldSkipNested(desc) then
-        nestedEffectHandlers[desc] = true
-      end
-    end
+    local skipCache: { [Instance]: boolean } = {}
+    local depthCache: { [Instance]: number } = {}
 
-    -- filter and emit valid effects
-    local promises = {}
+    skipCache[obj] = false
+    depthCache[obj] = baseDepth
 
-    for _, desc in allDescendants do
-      local skipThis = false
-      local parent = desc.Parent
+    for _, desc in allDesc do
+      local ancestors = {}
+      local current = desc.Parent
 
-      while parent and parent ~= obj do
-        if nestedEffectHandlers[parent] or parent:HasTag(utility.EMIT_EXCLUDE_TAG) then
-          skipThis = true
-          break
-        end
-
-        parent = parent.Parent
+      while depthCache[current] == nil do
+        table.insert(ancestors, current)
+        current = current.Parent
       end
 
-      if not skipThis then
-        local p = desc.Parent
-        local effectDepth = baseDepth
+      local shouldSkip = skipCache[current]
+      local currentDepth = depthCache[current]
 
-        while p and p ~= obj do
-          p = p.Parent
-          effectDepth += 1
+      for i = #ancestors, 1, -1 do
+        local ancestor = ancestors[i]
+
+        currentDepth += 1
+        depthCache[ancestor] = currentDepth
+
+        if not shouldSkip then
+          shouldSkip = utility.shouldSkipNested(ancestor) or ancestor:HasTag(utility.EMIT_EXCLUDE_TAG)
         end
 
+        skipCache[ancestor] = shouldSkip
+      end
+
+      if not shouldSkip then
         table.insert(
           promises,
-          utility.createEmitPromise(effects, desc, effectDepth, function(scope)
+          utility.createEmitPromise(effects, desc, depthCache[desc.Parent], function(scope)
             emitters.dispatch(desc, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
           end)
         )
