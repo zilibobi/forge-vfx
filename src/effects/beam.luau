@@ -55,8 +55,8 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   local duration = rng:NextNumber(durationRange.Min, durationRange.Max)
 
-  local lengthScaleStart = rng:NextNumber(lengthScaleRangeStart.Min, lengthScaleRangeStart.Max)
   local lengthScaleEnd = rng:NextNumber(lengthScaleRangeEnd.Min, lengthScaleRangeEnd.Max)
+  local lengthScaleStart = rng:NextNumber(lengthScaleRangeStart.Min, lengthScaleRangeStart.Max)
 
   local tStart, tEnd =
     utility.getAttribute(ref, "Transparency_Scale_Start", 1),
