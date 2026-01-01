@@ -31,12 +31,12 @@ jobs:
         run: .github/scripts/generate-changelog.sh > CHANGELOG.md
 
       - name: Convert aliases to directory
-        run: rojo-build-noalias --convert-to ./build-output
+        run: rojo-build-noalias --convert-to ./.build
 
       - name: Build project
         run: |
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-          rojo build ./build-output -o "forge-vfx@${CURRENT_TAG}.rbxm"
+          rojo build ./.build -o "forge-vfx@${CURRENT_TAG}.rbxm"
 
       - name: Create GitHub Release
         env:
@@ -53,13 +53,13 @@ jobs:
 
       - name: Publish to Wally
         run: |
-          cd build-output
+          cd .build
           wally publish
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Python dependencies
         run: pip install discord-webhook

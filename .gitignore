@@ -1,5 +1,7 @@
 sourcemap.json
+
 .dist
+.build
 
 *.rbxm
 
