@@ -4,6 +4,7 @@ local ObjectCache = require("@obj/ObjectCache")
 
 local types = require("@root/types")
 local utility = require("@mod/utility")
+local flipbook_common = require("@mod/common/flipbook")
 
 local texture_loader = {}
 
@@ -32,6 +33,48 @@ function texture_loader.init(scope: types.scope)
 
   local preloadScopes = {}
 
+  local function createLoader(
+    ref: Instance,
+    collectTextures: (add: (tex: string) -> ()) -> (),
+    conns: ((run: () -> ()) -> { RBXScriptConnection })?
+  )
+    local loadScope = {} :: { any }
+    local snapshotScope = {} :: { any }
+
+    table.insert(loadScope, snapshotScope)
+
+    local function refresh()
+      utility.cleanupScope(snapshotScope)
+
+      local function add(tex: string)
+        if tex == "" then
+          return
+        end
+
+        local d = texture_cache:get(tex)
+        d.Texture = tex
+
+        table.insert(snapshotScope, function()
+          texture_cache:free(tex)
+        end)
+      end
+
+      collectTextures(add)
+    end
+
+    refresh()
+
+    if utility.PLUGIN_CONTEXT and conns then
+      local run = utility.reboundfn(1, refresh)
+
+      for _, connection in conns(run) do
+        table.insert(loadScope, connection)
+      end
+    end
+
+    preloadScopes[ref] = loadScope
+  end
+
   local function loadTextures(ref: Instance)
     if ref:IsDescendantOf(workspace.Terrain) then
       return
@@ -44,89 +87,51 @@ function texture_loader.init(scope: types.scope)
         return
       end
 
-      local loadScope = {}
-      local snapshotScope = {}
-
-      table.insert(loadScope, snapshotScope)
-
-      local function refresh()
-        utility.cleanupScope(snapshotScope)
-
+      createLoader(ref, function(add)
         local decals, flipbooks = utility.getMeshDecals(ref :: Model, obj)
 
-        local function add(src: Decal | string)
-          local tex = typeof(src) == "Instance" and src.Texture or src
-
-          if tex == "" then
-            return
-          end
-
-          local d = texture_cache:get(tex)
-          d.Texture = tex
-
-          table.insert(snapshotScope, function()
-            texture_cache:free(tex)
-          end)
-        end
-
         for _, d in decals do
-          add(d)
+          add(typeof(d) ~= "string" and d.Texture or d)
         end
 
         for v, list in flipbooks do
-          local temp = false
-
-          if utility.PLUGIN_CONTEXT then
-            for _, tag in CollectionService:GetTags(v) do
-              if tag:match("^_local_flipbook_") then
-                temp = true
-                break
-              end
-            end
-          end
+          local prefix = flipbook_common.getTexturePrefix(ref)
 
           for _, id in list do
-            add(`{temp and "rbxtemp://" or "rbxassetid://"}{id}`)
+            add(`{prefix}{id}`)
           end
         end
-      end
+      end, function(run)
+        return {
+          obj.DescendantAdded:Connect(run),
+          obj.DescendantRemoving:Connect(run),
+        }
+      end)
+    elseif ref:IsA("Beam") then
+      createLoader(ref, function(add)
+        add(ref.Texture)
 
-      refresh()
+        local flipbook = flipbook_common.getFlipbookData(ref)
 
-      if utility.PLUGIN_CONTEXT then
-        local run = utility.reboundfn(1, refresh)
+        if flipbook then
+          local prefix = flipbook_common.getTexturePrefix(ref)
 
-        table.insert(loadScope, obj.DescendantAdded:Connect(run))
-        table.insert(loadScope, obj.DescendantRemoving:Connect(run))
-      end
-
-      preloadScopes[ref] = loadScope
+          for _, id in flipbook do
+            add(`{prefix}{id}`)
+          end
+        end
+      end, function(run)
+        return {
+          ref:GetPropertyChangedSignal("Texture"):Connect(run),
+          ref.AttributeChanged:Connect(run),
+        }
+      end)
     else
-      local loadScope = {} :: { any }
-      local snapshotScope = {} :: { any }
-
-      table.insert(loadScope, snapshotScope)
-
-      local function refresh()
-        utility.cleanupScope(snapshotScope)
-
+      createLoader(ref, function(add)
         local function check(obj: Instance)
-          if not obj:IsA("ParticleEmitter") then
-            return
+          if obj:IsA("ParticleEmitter") then
+            add(obj.Texture)
           end
-
-          local tex = obj.Texture
-
-          if tex == "" then
-            return
-          end
-
-          local d = texture_cache:get(tex)
-          d.Texture = tex
-
-          table.insert(snapshotScope, function()
-            texture_cache:free(tex)
-          end)
         end
 
         check(ref)
@@ -134,18 +139,12 @@ function texture_loader.init(scope: types.scope)
         for _, obj in ref:GetDescendants() do
           check(obj)
         end
-      end
-
-      refresh()
-
-      if utility.PLUGIN_CONTEXT then
-        local run = utility.reboundfn(1, refresh)
-
-        table.insert(loadScope, ref.DescendantAdded:Connect(run))
-        table.insert(loadScope, ref.DescendantRemoving:Connect(run))
-      end
-
-      preloadScopes[ref] = loadScope
+      end, function(run)
+        return {
+          ref.DescendantAdded:Connect(run),
+          ref.DescendantRemoving:Connect(run),
+        }
+      end)
     end
   end
 

@@ -8,9 +8,9 @@ local utility = require("@mod/utility")
 local Oklab = require("@mod/color/Oklab")
 local Bezier = require("@obj/Bezier")
 
-local bezierCommon = {}
+local common = {}
 
-bezierCommon.drawFuncMap = {
+common.drawFuncMap = {
   Box = {
     Volume = shape.getPointWithinBox,
     Surface = shape.getPointOnBox,
@@ -47,7 +47,7 @@ bezierCommon.drawFuncMap = {
   },
 }
 
-function bezierCommon.getColorAtTime(sequence: ColorSequence, time: number)
+function common.getColorAtTime(sequence: ColorSequence, time: number)
   local keypoints = sequence.Keypoints
 
   if time <= keypoints[1].Time then
@@ -81,7 +81,7 @@ function bezierCommon.getColorAtTime(sequence: ColorSequence, time: number)
   return closestBelow.Value:Lerp(closestAbove.Value, alpha)
 end
 
-function bezierCommon.getColorAtTimeOklab(sequence: ColorSequence, time: number)
+function common.getColorAtTimeOklab(sequence: ColorSequence, time: number)
   local keypoints = sequence.Keypoints
 
   if time <= keypoints[1].Time then
@@ -121,9 +121,9 @@ function bezierCommon.getColorAtTimeOklab(sequence: ColorSequence, time: number)
   return Oklab.toSRGB(blendedLab)
 end
 
-function bezierCommon.getColorWithEasingOklab(sequence: ColorSequence, time: number, easingBezier)
+function common.getColorWithEasingOklab(sequence: ColorSequence, time: number, easingBezier)
   local easedTime = 1 - easingBezier:getEase(math.clamp(time, 0, 1)).y
-  return bezierCommon.getColorAtTimeOklab(sequence, math.clamp(easedTime, 0, 1))
+  return common.getColorAtTimeOklab(sequence, math.clamp(easedTime, 0, 1))
 end
 
 export type HitboxConfig = {
@@ -134,7 +134,7 @@ export type HitboxConfig = {
   ignoreCanCollide: boolean,
 }
 
-function bezierCommon.createHitboxParams(config: HitboxConfig, parent: Instance, root: Attachment?): OverlapParams
+function common.createHitboxParams(config: HitboxConfig, parent: Instance, root: Attachment?): OverlapParams
   local params = OverlapParams.new()
   params.MaxParts = 1
   params.FilterType = Enum.RaycastFilterType[config.filterType]
@@ -160,7 +160,7 @@ export type EmissionConfig = {
   emissionDirection: Enum.NormalId,
 }
 
-function bezierCommon.calculateEmissionCFrame(
+function common.calculateEmissionCFrame(
   originCFrame: CFrame,
   originSize: Vector3,
   config: EmissionConfig,
@@ -203,12 +203,7 @@ function bezierCommon.calculateEmissionCFrame(
   return cf
 end
 
-function bezierCommon.createBezierWithEndpoint(
-  points: { vector },
-  cf: CFrame,
-  endPoint: Attachment?,
-  endT1: Attachment?
-)
+function common.createBezierWithEndpoint(points: { vector }, cf: CFrame, endPoint: Attachment?, endT1: Attachment?)
   if not endPoint then
     return Bezier.new(points)
   end
@@ -227,7 +222,7 @@ function bezierCommon.createBezierWithEndpoint(
   return Bezier.new(pts)
 end
 
-function bezierCommon.createPosGetter(
+function common.createPosGetter(
   bezier,
   points: { vector },
   cf: CFrame,
@@ -245,7 +240,7 @@ function bezierCommon.createPosGetter(
   end
 end
 
-function bezierCommon.readCommonAttributes(ref: Attachment)
+function common.readCommonAttributes(ref: Attachment)
   return {
     -- timing
     emitDelay = utility.getAttribute(ref, "EmitDelay", 0),
@@ -296,7 +291,7 @@ function bezierCommon.readCommonAttributes(ref: Attachment)
   }
 end
 
-function bezierCommon.getCurrentOriginCFrame(parent: Instance, fallback: CFrame)
+function common.getCurrentOriginCFrame(parent: Instance, fallback: CFrame)
   if parent:IsA("BasePart") then
     return parent.CFrame
   elseif parent:IsA("Attachment") then
@@ -306,7 +301,7 @@ function bezierCommon.getCurrentOriginCFrame(parent: Instance, fallback: CFrame)
   return fallback
 end
 
-function bezierCommon.findEndAttachments(ref: Attachment): (Attachment?, Attachment?)
+function common.findEndAttachments(ref: Attachment): (Attachment?, Attachment?)
   local endPoint = ref:FindFirstChild("End")
   local endT1 = endPoint and endPoint:FindFirstChild("T1")
 
@@ -321,7 +316,7 @@ function bezierCommon.findEndAttachments(ref: Attachment): (Attachment?, Attachm
   return endPoint, endT1
 end
 
-function bezierCommon.validateParent(ref: Attachment): Instance?
+function common.validateParent(ref: Attachment): Instance?
   local parent = ref.Parent
 
   if not parent then
@@ -335,7 +330,7 @@ function bezierCommon.validateParent(ref: Attachment): Instance?
   return parent
 end
 
-function bezierCommon.getPerpendicularVectors(tangent: Vector3)
+function common.getPerpendicularVectors(tangent: Vector3)
   local right = tangent:Cross(Vector3.yAxis)
 
   if right.Magnitude < 0.001 then
@@ -349,7 +344,7 @@ function bezierCommon.getPerpendicularVectors(tangent: Vector3)
   return right, up
 end
 
-function bezierCommon.createPropertyTween(
+function common.createPropertyTween(
   scope: any,
   ref: Attachment,
   attrName: string,
@@ -378,4 +373,4 @@ function bezierCommon.createPropertyTween(
   )
 end
 
-return bezierCommon
+return common

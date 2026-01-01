@@ -2,6 +2,7 @@
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
+local flipbook_common = require("@mod/common/flipbook")
 
 local Promise = require("@pkg/Promise")
 
@@ -265,7 +266,38 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     obj.Width1 = w3
   end
 
-  tween.timer(duration, function(deltaTime, elapsed)
+  -- flipbook support
+  local flipbookDuration = 0
+  local flipbook = flipbook_common.getFlipbookData(ref)
+
+  if flipbook then
+    local config = {
+      ref = ref,
+      frames = flipbook,
+      speedTween = speedTween,
+      effectDuration = duration,
+
+      curve = utility.getAttribute(ref, "Flipbook_Change_Curve", utility.linear_bezier),
+      duration = utility.getAttribute(ref, "Flipbook_Change_Duration", duration),
+
+      getSpeed = function()
+        return currentSpeed
+      end,
+
+      setTexture = function(texture)
+        obj.Texture = texture
+      end,
+    }
+
+    flipbookDuration = flipbook_common.getChangeDuration(config)
+
+    table.insert(
+      scope,
+      tween.fromParams(config.curve, flipbookDuration, flipbook_common.createUpdateCallback(config), speedTween)
+    )
+  end
+
+  tween.timer(math.max(duration, flipbookDuration), function(deltaTime, elapsed)
     return if currentSpeed > 0 or (elapsed > 0 and speedTween and speedTween.Connected)
       then deltaTime * currentSpeed
       else nil

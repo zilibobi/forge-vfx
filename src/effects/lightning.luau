@@ -2,7 +2,7 @@
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
-local bezier_common = require("@mod/bezier_common")
+local bezier_common = require("@mod/common/bezier")
 
 local Bezier = require("@obj/Bezier")
 local Promise = require("@pkg/Promise")

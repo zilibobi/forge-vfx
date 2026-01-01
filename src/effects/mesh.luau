@@ -1,10 +1,10 @@
 --!nolint LocalShadow
 local RunService = game:GetService("RunService")
-local CollectionService = game:GetService("CollectionService")
 
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
+local flipbook_common = require("@mod/common/flipbook")
 
 local Oklab = require("@mod/color/Oklab")
 local Promise = require("@pkg/Promise")
@@ -411,40 +411,33 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       local flipbook = flipbooks[from]
 
       if flipbook then
-        local changeDuration = utility.getAttribute(from, "Flipbook_Change_Duration", duration)
+        local config = {
+          ref = from,
+          frames = flipbook,
+          speedTween = speedTween,
+          effectDuration = duration,
 
-        if utility.getAttribute(from, "SyncDuration", false) then
-          changeDuration = duration
-        end
+          curve = utility.getAttribute(from, "Flipbook_Change_Curve", utility.linear_bezier),
+          duration = utility.getAttribute(from, "Flipbook_Change_Duration", duration),
+
+          getSpeed = function()
+            return ref:GetAttribute("SpeedOverride") or currentSpeed
+          end,
+
+          setTexture = function(texture)
+            decal.Texture = texture
+          end,
+        }
+
+        local changeDuration = flipbook_common.getChangeDuration(config)
 
         if changeDuration > longestFlipbookDuration then
           longestFlipbookDuration = changeDuration
         end
 
-        local temp = false
-
-        if RunService:IsStudio() then
-          for _, tag in CollectionService:GetTags(from) do
-            if tag:match("^_local_flipbook_") then
-              temp = true
-              break
-            end
-          end
-        end
-
         table.insert(
           scope,
-          tween.fromParams(
-            utility.getAttribute(from, "Flipbook_Change_Curve", utility.linear_bezier),
-            changeDuration,
-            function(alpha, deltaTime)
-              local index = math.max(math.round(#flipbook * alpha), 1)
-              decal.Texture = `{temp and "rbxtemp://" or "rbxassetid://"}{flipbook[index]}`
-
-              return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
-            end,
-            speedTween
-          )
+          tween.fromParams(config.curve, changeDuration, flipbook_common.createUpdateCallback(config), speedTween)
         )
       end
     end

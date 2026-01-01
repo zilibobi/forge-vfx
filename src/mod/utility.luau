@@ -711,28 +711,10 @@ function utility.deserializePath(data: string | buffer)
   return points
 end
 
-function utility.serializeFlipbook(ids: { number })
-  local buf = buffer.create(#ids * 8)
+local flipbook_common = require("@mod/common/flipbook")
 
-  for i, id in ids do
-    buffer.writef64(buf, (i - 1) * 8, id)
-  end
-
-  return buf
-end
-
-function utility.deserializeFlipbook(data: string | buffer)
-  local buf = typeof(data) == "string" and buffer.fromstring(data) or data
-  local count = buffer.len(buf) / 8
-
-  local ids = {}
-
-  for i = 0, count - 1 do
-    table.insert(ids, buffer.readf64(buf, i * 8))
-  end
-
-  return ids
-end
+utility.serializeFlipbook = flipbook_common.serialize
+utility.deserializeFlipbook = flipbook_common.deserialize
 
 -- out cubic
 utility.default_bezier = buffer.tostring(utility.serializePath({
