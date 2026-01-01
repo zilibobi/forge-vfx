@@ -212,12 +212,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
           end
 
           if common.syncPosition then
-            local initOrigin = utility.getTransformedOriginExtents(parent, originCFrame)
+            local initOrigin = utility.getTransformedOriginExtents(parent)
             local initPartPos = objAbstr.CFrame
 
             local function updatePos()
-              objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
-                * initOrigin:ToObjectSpace(initPartPos)
+              objAbstr.CFrame = utility.getTransformedOriginExtents(parent) * initOrigin:ToObjectSpace(initPartPos)
             end
 
             local id = utility.getRandomId()
@@ -301,8 +300,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
               newCF *= currentRot
 
               if common.syncPosition then
-                objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
-                  * originCFrame:ToObjectSpace(newCF)
+                objAbstr.CFrame = utility.getTransformedOriginExtents(parent) * originCFrame:ToObjectSpace(newCF)
               else
                 objAbstr.CFrame = newCF
               end
@@ -351,11 +349,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
               lastVelocity = dir * common.projectileSpeed
 
               local projectileOrigin = obj.Position
-              local originCFrameAtProjectileInit = utility.getTransformedOriginExtents(parent, originCFrame)
+              local originCFrameAtProjectileInit = utility.getTransformedOriginExtents(parent)
 
               tween.timer(lifetime, function(deltaTime, elapsed)
                 if common.syncPosition then
-                  objAbstr.CFrame = utility.getTransformedOriginExtents(parent, originCFrame)
+                  objAbstr.CFrame = utility.getTransformedOriginExtents(parent)
                     * originCFrameAtProjectileInit:ToObjectSpace(CFrame.new(projectileOrigin + lastVelocity * elapsed))
                 else
                   objAbstr.CFrame = CFrame.new(projectileOrigin + lastVelocity * elapsed) * obj.CFrame.Rotation

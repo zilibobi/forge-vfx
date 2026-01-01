@@ -1004,7 +1004,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
               currentFillColorAlpha = (currentFillColorAlpha + scaledDelta / attrs.fillColorDuration) % 1
 
               if common.syncPosition then
-                local newOrigin = utility.getTransformedOriginExtents(parent, currentOriginCFrame)
+                local newOrigin = utility.getTransformedOriginExtents(parent)
                 local offset = newOrigin * currentOriginCFrame:Inverse()
 
                 for j = 1, #lightningPoints do
