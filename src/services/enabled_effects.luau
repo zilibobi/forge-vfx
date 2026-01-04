@@ -60,8 +60,10 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
       return
     end
 
-    local function onEnabled()
-      local enabled = attr.get(obj, "Enabled", true)
+    local function onEnabled(enabled: boolean?)
+      if enabled == nil then
+        enabled = attr.get(obj, "Enabled", true)
+      end
 
       if enabled then
         local last = 0
@@ -70,7 +72,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
           tempScope,
           RunService.RenderStepped:Connect(function()
             local rate = attr.get(obj, "Rate", 5)
-            local speed = obj:GetAttribute("SpeedOverride") or 1
+            local speed = attr.getState(obj, "SpeedOverride", 1)
 
             if speed == 0 then
               return
@@ -96,7 +98,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
       end
     end
 
-    table.insert(preEffectScope, obj:GetAttributeChangedSignal("Enabled"):Connect(onEnabled))
+    table.insert(preEffectScope, attr.hook(obj, "Enabled", onEnabled))
 
     onEnabled()
   end

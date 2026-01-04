@@ -232,7 +232,9 @@ function api.cacheAttributes(obj: Instance)
     logger.error("attributes can only be cached for VFX inside ReplicatedStorage")
   end
 
-  attributes.cache(obj)
+  for _, v in obj:GetDescendants() do
+    attributes.cache(v)
+  end
 end
 
 function api.restoreAttributes(obj: Instance)
@@ -240,7 +242,35 @@ function api.restoreAttributes(obj: Instance)
     logger.error("attributes can only be restored in a client-side context")
   end
 
-  attributes.restore(obj)
+  for _, v in obj:GetDescendants() do
+    attributes.restore(v)
+  end
+end
+
+function api.enable(obj: Instance)
+  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
+    obj.Enabled = true
+    return
+  end
+
+  if attributes.isCached(obj) then
+    attributes.trigger(obj, "Enabled", true)
+  else
+    obj:SetAttribute("Enabled", true)
+  end
+end
+
+function api.disable(obj: Instance)
+  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
+    obj.Enabled = false
+    return
+  end
+
+  if attributes.isCached(obj) then
+    attributes.trigger(obj, "Enabled", false)
+  else
+    obj:SetAttribute("Enabled", false)
+  end
 end
 
 return api

@@ -64,10 +64,10 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
   task.wait(common.emitDelay)
 
   if useDuration and not mustEmit then
-    ref:SetAttribute("Enabled", true)
+    attr.trigger(ref, "Enabled", true)
 
     if common.speedStart ~= common.speedEnd then
-      ref:SetAttribute("SpeedTweening", true)
+      attr.setState(ref, "SpeedTweening", true)
 
       table.insert(
         scope,
@@ -75,12 +75,12 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
           attrs.speedCurve,
           attrs.speedDuration,
           function(alpha, deltaTime)
-            ref:SetAttribute("SpeedOverride", utility.lerp(common.speedStart, common.speedEnd, alpha))
+            attr.setState(ref, "SpeedOverride", utility.lerp(common.speedStart, common.speedEnd, alpha))
             return deltaTime
           end,
           nil,
           function()
-            ref:SetAttribute("SpeedTweening", nil)
+            attr.setState(ref, "SpeedTweening", nil)
           end
         )
       )
@@ -88,8 +88,8 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
     task.wait(common.emitDuration)
 
-    ref:SetAttribute("Enabled", false)
-    ref:SetAttribute("SpeedOverride", nil)
+    attr.trigger(ref, "Enabled", false)
+    attr.clearState(ref)
 
     return
   end
@@ -249,7 +249,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
         -- Speed tween
         local speedTween
 
-        if common.speedStart ~= common.speedEnd and not ref:GetAttribute("SpeedOverride") then
+        if common.speedStart ~= common.speedEnd and not attr.getState(ref, "SpeedOverride", nil) then
           speedTween = tween.fromParams(attrs.speedCurve, attrs.speedDuration, function(alpha, deltaTime)
             currentSpeed = utility.lerp(common.speedStart, common.speedEnd, alpha)
             return deltaTime
@@ -259,11 +259,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
         end
 
         local function getEffectiveSpeed()
-          return ref:GetAttribute("SpeedOverride") or currentSpeed
+          return attr.getState(ref, "SpeedOverride", currentSpeed)
         end
 
         local function isSpeedTweening()
-          return if speedTween then speedTween.Connected else ref:GetAttribute("SpeedTweening")
+          return if speedTween then speedTween.Connected else attr.getState(ref, "SpeedTweening", false)
         end
 
         -- Rotation speed tween

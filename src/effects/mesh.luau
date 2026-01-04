@@ -118,10 +118,10 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   task.wait(emitDelay)
 
   if useEmitDuration and not mustEmit then
-    ref:SetAttribute("Enabled", true)
+    attr.trigger(ref, "Enabled", true)
 
     if speedStart ~= speedEnd then
-      ref:SetAttribute("SpeedTweening", true)
+      attr.setState(ref, "SpeedTweening", true)
 
       table.insert(
         scope,
@@ -129,12 +129,12 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           attr.get(ref, "Speed_Curve", utility.default_bezier),
           attr.get(ref, "Speed_Duration", 0.1),
           function(alpha, deltaTime)
-            ref:SetAttribute("SpeedOverride", utility.lerp(speedStart, speedEnd, alpha))
+            attr.setState(ref, "SpeedOverride", utility.lerp(speedStart, speedEnd, alpha))
             return deltaTime
           end,
           nil,
           function()
-            ref:SetAttribute("SpeedTweening", nil)
+            attr.setState(ref, "SpeedTweening", nil)
           end
         )
       )
@@ -142,8 +142,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
     task.wait(emitDuration)
 
-    ref:SetAttribute("Enabled", false)
-    ref:SetAttribute("SpeedOverride", nil)
+    attr.trigger(ref, "Enabled", false)
+    attr.clearState(ref)
 
     return
   end
@@ -206,7 +206,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   local speedTween
 
-  if speedStart ~= speedEnd and not ref:GetAttribute("SpeedOverride") then
+  if speedStart ~= speedEnd and not attr.getState(ref, "SpeedOverride", nil) then
     speedTween = tween.fromParams(
       attr.get(ref, "Speed_Curve", utility.default_bezier),
       attr.get(ref, "Speed_Duration", 0.1),
@@ -227,7 +227,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         duration,
         function(alpha, deltaTime)
           currentCFrame = CFrame.identity:Lerp(goalCFrameOffset, alpha)
-          return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+          return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
         end,
         speedTween
       )
@@ -242,7 +242,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         duration,
         function(alpha, deltaTime)
           currentRotSpeed = utility.lerp(rotSpeedStart, rotSpeedEnd, alpha)
-          return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+          return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
         end,
         speedTween
       )
@@ -257,7 +257,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         duration,
         function(alpha, deltaTime)
           obj.Transparency = utility.lerp(tpStart, tpEnd, alpha)
-          return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+          return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
         end,
         speedTween
       )
@@ -277,7 +277,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         attr.get(ref, "Part_Size_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
-          local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
+          local speed = attr.getState(ref, "SpeedOverride", currentSpeed)
 
           -- reduce size writes
           if math.abs(alpha - lastSizeAlpha) < 0.005 then
@@ -313,7 +313,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
             duration,
             function(alpha, deltaTime)
               objMesh.Scale = utility.lerp(scaleStart, scaleEnd, alpha)
-              return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+              return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
             end,
             speedTween
           )
@@ -351,7 +351,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           scope,
           tween.fromParams(utility.default_bezier, duration + legacy_flipbookFadeOffset, function(alpha, deltaTime)
             displayDecal.Transparency = utility.lerp(legacy_decalST, legacy_decalET, alpha)
-            return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+            return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
           end, speedTween)
         )
       end
@@ -373,7 +373,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           displayDecal.ZIndex = target.ZIndex
         end
 
-        return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+        return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
       end, speedTween)
     )
   else
@@ -392,7 +392,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
             duration,
             function(alpha, deltaTime)
               decal.Transparency = utility.lerp(decal_tpStart, decal_tpEnd, alpha)
-              return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+              return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
             end,
             speedTween
           )
@@ -413,7 +413,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
               decal.Color3 = Oklab.toSRGB(a:Lerp(b, alpha), true)
 
-              return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+              return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
             end,
             speedTween
           )
@@ -433,7 +433,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           duration = attr.get(from, "Flipbook_Change_Duration", duration),
 
           getSpeed = function()
-            return ref:GetAttribute("SpeedOverride") or currentSpeed
+            return attr.getState(ref, "SpeedOverride", currentSpeed)
           end,
 
           setTexture = function(texture)
@@ -456,12 +456,12 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   end
 
   tween.timer(math.max(duration, longestFlipbookDuration) + legacy_flipbookFadeOffset, function(deltaTime, elapsed)
-    local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
+    local speed = attr.getState(ref, "SpeedOverride", currentSpeed)
 
     currentSpeed = speed
 
     return if speed > 0
-        or (elapsed > 0 and if speedTween then speedTween.Connected else ref:GetAttribute("SpeedTweening"))
+        or (elapsed > 0 and if speedTween then speedTween.Connected else attr.getState(ref, "SpeedTweening", false))
       then deltaTime * speed
       else nil
   end, speedTween, scope)

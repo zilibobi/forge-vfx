@@ -17,20 +17,33 @@ type AttrHooks = {
   }
 }
 
+type RuntimeState = {
+  [Instance]: {
+    [string]: any
+  }
+}
+
 local Cache: AttrCache = {}
 local Hooks: AttrHooks = {}
+local State: RuntimeState = {}
 
-local LastRefId = 1
+local LastRefId = 0
 
 local attr = {}
 
 function attr.cache(obj: Instance)
+  local attributes = obj:GetAttributes()
+
+  if next(attributes) == nil then
+    return
+  end
+
   LastRefId += 1
 
   local id = LastRefId
   local map = {}
 
-  for k, v in obj:GetAttributes() do
+  for k, v in attributes do
     if k == ATTR_CACHE_ID then
       continue
     end
@@ -125,6 +138,45 @@ function attr.set<T>(obj: Instance, key: string, value: T)
   end
 end
 
+function attr.isCached(obj: Instance): boolean
+  return obj:GetAttribute(ATTR_CACHE_ID) ~= nil
+end
+
+function attr.getState<T>(obj: Instance, key: string, default: T): T
+  local state = State[obj]
+  local value = state and state[key]
+
+  return if value ~= nil then value else default
+end
+
+function attr.setState<T>(obj: Instance, key: string, value: T)
+  local state = State[obj]
+
+  if not state then
+    state = {}
+    State[obj] = state
+  end
+
+  state[key] = value
+end
+
+function attr.clearState(obj: Instance)
+  State[obj] = nil
+end
+
+function attr.trigger<T>(obj: Instance, key: string, value: T)
+  local hooks = Hooks[obj]
+  local callbacks = hooks and hooks[key]
+
+  if not callbacks then
+    return
+  end
+
+  for _, callback in callbacks do
+    callback(value)
+  end
+end
+
 function attr.hook<T>(obj: Instance, key: string, callback: (v: T) -> never)
   local hooks = Hooks[obj]
 
@@ -142,7 +194,20 @@ function attr.hook<T>(obj: Instance, key: string, callback: (v: T) -> never)
 
   table.insert(callbacks, callback)
 
+  local connection
+
+  if not attr.isCached(obj) then
+    connection = obj:GetAttributeChangedSignal(key):Connect(function()
+      local value = obj:GetAttribute(key)
+      callback(value)
+    end)
+  end
+
   return function()
+    if connection then
+      connection:Disconnect()
+    end
+
     local index = table.find(callbacks, callback)
 
     if index then
