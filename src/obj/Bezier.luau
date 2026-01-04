@@ -1,5 +1,9 @@
+--!native
 --!nocheck
+--!optimize 2
 type n = vector | number
+
+local EASE_LUT_SIZE = 64
 
 local NEWTON_MIN_TOL = 0.001
 local NEWTON_MAX_ITER = 5
@@ -17,9 +21,10 @@ end
 local bezier = {}
 bezier.__index = bezier
 
-type Bezier = typeof(bezier) & {
+export type Bezier = typeof(bezier) & {
   points: { vector },
   cumulative_lengths: { number },
+  ease_lut: { vector }?,
 
   length: number,
   accuracy: number,
@@ -42,6 +47,8 @@ end
 
 function bezier.setPoints(self: Bezier, points: { vector })
   self.points = points
+  self.ease_lut = nil
+
   self:_recalculate()
 end
 
@@ -101,7 +108,7 @@ function bezier.getSegmentIndex(self: Bezier, t: number)
   return i, u
 end
 
--- Only works with beziers whose input is the X axis
+-- only works with beziers whose input is the X axis
 function bezier.getEasedSegmentIndex(self: Bezier, t: number)
   local i = self.point_count - 1
   local u = 1
@@ -123,7 +130,7 @@ function bezier.getEasedSegmentIndex(self: Bezier, t: number)
   return i, u
 end
 
-function bezier.getEase(self: Bezier, t: number)
+function bezier._getEaseRaw(self: Bezier, t: number)
   local i, s = self:getEasedSegmentIndex(t)
   local p0, p1, p2, p3 = self:getSegmentPoints(i)
 
@@ -150,6 +157,37 @@ function bezier.getEase(self: Bezier, t: number)
   end
 
   return cubicBezier(p0, p1, p2, p3, s)
+end
+
+function bezier._buildEaseLUT(self: Bezier)
+  local lut = table.create(EASE_LUT_SIZE + 1)
+
+  for i = 0, EASE_LUT_SIZE do
+    local t = i / EASE_LUT_SIZE
+    lut[i] = self:_getEaseRaw(t)
+  end
+
+  self.ease_lut = lut
+end
+
+function bezier.getEase(self: Bezier, t: number)
+  local lut = self.ease_lut
+
+  if not lut then
+    self:_buildEaseLUT()
+    lut = self.ease_lut
+  end
+
+  t = math.clamp(t, 0, 1)
+
+  local idx = t * EASE_LUT_SIZE
+
+  local lo = math.floor(idx)
+  local hi = math.min(lo + 1, EASE_LUT_SIZE)
+
+  local frac = idx - lo
+
+  return lut[lo]:Lerp(lut[hi], frac)
 end
 
 function bezier.getPositionArcSpace(self: Bezier, t: number)

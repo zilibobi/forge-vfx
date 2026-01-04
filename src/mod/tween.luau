@@ -1,11 +1,12 @@
-local RunService = game:GetService("RunService")
-
+local batch = require("@mod/tween_batch")
 local logger = require("@mod/logger")
 local utility = require("@mod/utility")
 
 local Bezier = require("@obj/Bezier")
 
 local tween = {}
+
+local bezierCache: { [string]: Bezier.Bezier } = {}
 
 function tween.fromParams(
   params: string,
@@ -16,22 +17,31 @@ function tween.fromParams(
   startAtZero: boolean?,
   stepAtPriority: number?
 )
-  local success, points = pcall(function()
-    return utility.deserializePath(params)
-  end)
+  local bezier = bezierCache[params]
 
-  if not success then
-    logger.error(`failed to decode bezier path data with error: {points}`)
+  if not bezier then
+    local success, points = pcall(function()
+      return utility.deserializePath(params)
+    end)
+
+    if not success then
+      logger.error(`failed to decode bezier path data with error: {points}`)
+    end
+
+    bezier = Bezier.new(points, 0)
+    bezierCache[params] = bezier
   end
 
-  -- use 0 accuracy as it saves performance because there is no need to calculate the length
-  local bezier = Bezier.new(points, 0)
   local elapsed = 0
+  local finished = false
 
-  local cleanupStepper
+  local unregister
 
-  local function step(deltaTime)
-    -- roblox tweens apparently don't start from alpha=0
+  local function step(deltaTime): boolean
+    if finished then
+      return true
+    end
+
     if not startAtZero and elapsed == 0 then
       elapsed = math.clamp(elapsed + deltaTime, 0, math.max(duration, 0))
     end
@@ -45,48 +55,52 @@ function tween.fromParams(
       (result == nil or (if duration ~= 0 then elapsed >= duration else elapsed > duration))
       and (not awaitTween or not awaitTween.Connected)
     then
-      cleanupStepper()
+      finished = true
 
       if onFinish then
         onFinish(true)
       end
 
-      return
+      return true
     end
 
     if result then
       elapsed = math.clamp(elapsed + result, 0, math.max(duration, 0.001))
     end
+
+    return false
   end
 
-  if not stepAtPriority then
-    local connection: RBXScriptConnection
-    connection = RunService.RenderStepped:Connect(step)
+  -- connection-like interface for compatibility
+  local handler = {}
+  handler.Connected = true
 
-    cleanupStepper = function()
-      connection:Disconnect()
+  function handler:Disconnect()
+    if not handler.Connected then
+      return
     end
 
-    return connection
-  else
-    local id = utility.getRandomId()
+    finished = true
+    handler.Connected = false
 
-    RunService:BindToRenderStep(id, stepAtPriority, step)
+    if unregister then
+      unregister()
+    end
+  end
 
-    local bound = true
+  unregister = batch.register(stepAtPriority, {
+    step = function(deltaTime): boolean
+      local done = step(deltaTime)
 
-    cleanupStepper = function()
-      if not bound then
-        return
+      if done then
+        handler.Connected = false
       end
 
-      bound = false
+      return done
+    end,
+  })
 
-      RunService:UnbindFromRenderStep(id)
-    end
-
-    return cleanupStepper
-  end
+  return handler
 end
 
 function tween.timer(
@@ -99,52 +113,52 @@ function tween.timer(
   local main = coroutine.running()
 
   local elapsed = 0
+  local finished = false
 
-  local cleanupStepper
+  local unregister: (() -> ())?
 
-  local function step(deltaTime)
+  local function step(deltaTime): boolean
+    if finished then
+      return true
+    end
+
     local result = counter(deltaTime, elapsed)
 
     if
       (result == nil or (if duration ~= 0 then elapsed >= duration else elapsed > duration))
       and (not awaitTween or not awaitTween.Connected)
     then
-      cleanupStepper()
+      finished = true
       task.spawn(main)
-      return
+
+      return true
     end
 
     if result then
       elapsed = math.clamp(elapsed + result, 0, math.max(duration, 0.001))
     end
+
+    return false
   end
 
-  if not stepAtPriority then
-    local connection = RunService.RenderStepped:Connect(step)
+  unregister = batch.register(stepAtPriority, {
+    step = step,
+  })
 
-    cleanupStepper = function()
-      connection:Disconnect()
+  local cleanup = function()
+    if finished then
+      return
     end
-  else
-    local id = utility.getRandomId()
 
-    RunService:BindToRenderStep(id, stepAtPriority, step)
+    finished = true
 
-    local bound = true
-
-    cleanupStepper = function()
-      if not bound then
-        return
-      end
-
-      bound = false
-
-      RunService:UnbindFromRenderStep(id)
+    if unregister then
+      unregister()
     end
   end
 
   if scope then
-    table.insert(scope, cleanupStepper)
+    table.insert(scope, cleanup)
   end
 
   coroutine.yield()

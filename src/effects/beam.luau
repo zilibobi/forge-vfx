@@ -111,13 +111,40 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(scope, speedTween)
   end
 
-  local function setTScale(tscale: number)
-    obj.Transparency = utility.scaleNumberSequence(ref.Transparency, function(value, envelope)
-      local base = tscale > 1 and (1 - value) or -value
-      local offset = tscale > 1 and tscale - 1 or 1 - tscale
+  local refTpKp = ref.Transparency.Keypoints
 
-      return value + base * offset, envelope
-    end)
+  local numKeypoints = #refTpKp
+  local scaledKeypoints = table.create(numKeypoints)
+
+  local keypointData = table.create(numKeypoints)
+
+  for i, kp in refTpKp do
+    keypointData[i] = {
+      time = kp.Time,
+      value = kp.Value,
+      envelope = kp.Envelope,
+    }
+  end
+
+  local lastTScale = nil
+
+  local function setTScale(tscale: number)
+    if lastTScale and math.abs(tscale - lastTScale) < 0.001 then
+      return
+    end
+
+    lastTScale = tscale
+
+    local offset = tscale > 1 and tscale - 1 or 1 - tscale
+
+    for i, kd in keypointData do
+      local value = kd.value
+      local base = tscale > 1 and (1 - value) or -value
+
+      scaledKeypoints[i] = NumberSequenceKeypoint.new(kd.time, value + base * offset, kd.envelope)
+    end
+
+    obj.Transparency = NumberSequence.new(scaledKeypoints)
   end
 
   local att0, att1 = obj.Attachment0, obj.Attachment1

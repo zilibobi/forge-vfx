@@ -268,14 +268,25 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   local sizeStart, sizeEnd = start.Size * scale, goal.Size * scale
 
   if sizeStart ~= sizeEnd then
+    local lastSizeAlpha = -1
+
     table.insert(
       scope,
       tween.fromParams(
         utility.getAttribute(ref, "Part_Size_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
+          local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
+
+          -- reduce size writes
+          if math.abs(alpha - lastSizeAlpha) < 0.005 then
+            return deltaTime * speed
+          end
+
+          lastSizeAlpha = alpha
           obj.Size = sizeStart:Lerp(sizeEnd, alpha)
-          return deltaTime * (ref:GetAttribute("SpeedOverride") or currentSpeed)
+
+          return deltaTime * speed
         end,
         speedTween
       )
