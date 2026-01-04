@@ -223,30 +223,6 @@ function api.emitWithDepth(depth: number, ...: Instance)
   return fullEmit(1, depth, ...)
 end
 
-function api.cacheAttributes(obj: Instance)
-  if utility.SERVER_CONTEXT then
-    logger.error("attributes can only be cached in a client-side context")
-  end
-
-  if not obj:IsDescendantOf(ReplicatedStorage) then
-    logger.error("attributes can only be cached for VFX inside ReplicatedStorage")
-  end
-
-  for _, v in obj:GetDescendants() do
-    attributes.cache(v)
-  end
-end
-
-function api.restoreAttributes(obj: Instance)
-  if utility.SERVER_CONTEXT then
-    logger.error("attributes can only be restored in a client-side context")
-  end
-
-  for _, v in obj:GetDescendants() do
-    attributes.restore(v)
-  end
-end
-
 function api.enable(obj: Instance)
   if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
     obj.Enabled = true
@@ -270,6 +246,30 @@ function api.disable(obj: Instance)
     attributes.trigger(obj, "Enabled", false)
   else
     obj:SetAttribute("Enabled", false)
+  end
+end
+
+function api.cacheAttributes(obj: Instance)
+  if utility.SERVER_CONTEXT then
+    logger.error("attributes can only be cached in a client-side context")
+  end
+
+  if not obj:IsDescendantOf(ReplicatedStorage) then
+    logger.error("attributes can only be cached for VFX inside ReplicatedStorage")
+  end
+
+  for _, v in obj:GetDescendants() do
+    attributes.cache(v)
+  end
+end
+
+function api.restoreAttributes(obj: Instance)
+  if utility.SERVER_CONTEXT then
+    logger.error("attributes can only be restored in a client-side context")
+  end
+
+  for _, v in obj:GetDescendants() do
+    attributes.restore(v)
   end
 end
 
