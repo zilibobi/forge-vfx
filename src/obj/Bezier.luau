@@ -187,7 +187,14 @@ function bezier.getEase(self: Bezier, t: number)
 
   local frac = idx - lo
 
-  return lut[lo]:Lerp(lut[hi], frac)
+  local loVal = lut[lo]
+  local hiVal = lut[hi]
+
+  if not loVal or not hiVal then
+    return self:_getEaseRaw(t)
+  end
+
+  return loVal:Lerp(hiVal, frac)
 end
 
 function bezier.getPositionArcSpace(self: Bezier, t: number)
