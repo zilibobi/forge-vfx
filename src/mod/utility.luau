@@ -3,6 +3,7 @@
 local RunService = game:GetService("RunService")
 local PhysicsService = game:GetService("PhysicsService")
 
+local attr = require("@mod/attributes")
 local logger = require("@mod/logger")
 
 local Promise = require("@pkg/Promise")
@@ -22,8 +23,6 @@ utility.SHOCKWAVE_TAG = "Shockwave"
 utility.SCREENSHAKE_TAG = "CameraShake"
 utility.ENABLED_VFX_TAG = "ConstantVFX"
 utility.TEXTURE_LOAD_TAG = "LoadVFXTextures"
-
-utility.ATTR_CACHE_ID = "U"
 
 utility.CLEANUP_TAG = "__forge__cleanupOnExit"
 utility.EMIT_EXCLUDE_TAG = "__forge_excludeFromEmit"
@@ -188,10 +187,10 @@ function utility.isMeshVFX(obj: Instance)
 end
 
 function utility.isSpinModelStatic(model: Model)
-  return utility.getAttribute(model, "SpinRotation", vector.zero, true) == vector.zero
-    and utility.getAttribute(model, "Scale_Start", 1, true) == 1
-    and utility.getAttribute(model, "Scale_End", 1, true) == 1
-    and (utility.getAttribute(model, "SyncPosition", false, true) == false)
+  return attr.get(model, "SpinRotation", vector.zero, true) == vector.zero
+    and attr.get(model, "Scale_Start", 1, true) == 1
+    and attr.get(model, "Scale_End", 1, true) == 1
+    and (attr.get(model, "SyncPosition", false, true) == false)
 end
 
 function utility.shouldSkipNested(obj: Instance)
@@ -332,62 +331,6 @@ function utility.cloneParticleAncestry(
   return recurse(particle.Parent)
 end
 
-function utility.getAttribute<T>(obj: Instance, name: string, default: T, soft: boolean?): T
-  local value = obj:GetAttribute(name)
-
-  if value == nil or typeof(value) ~= typeof(default) then
-    value = default
-  end
-
-  if not soft then
-    obj:SetAttribute(name, value)
-  end
-
-  return value
-end
-
-function utility.getRangeAttribute(
-  obj: Instance,
-  name: string,
-  default: NumberRange,
-  clamp: NumberRange?,
-  soft: boolean?
-)
-  local value = obj:GetAttribute(name)
-
-  if typeof(value) ~= "NumberRange" then
-    value = default
-  end
-
-  if clamp then
-    -- stylua: ignore
-    value = NumberRange.new(
-      math.clamp(value.Min, clamp.Min, clamp.Max),
-      math.clamp(value.Max, clamp.Min, clamp.Max)
-    )
-  end
-
-  if not soft then
-    obj:SetAttribute(name, value)
-  end
-
-  return value
-end
-
-function utility.getEnumAttribute<T>(obj: Instance, name: string, default: T, enums: { T }, soft: boolean?): T
-  local value = obj:GetAttribute(name)
-
-  if value == nil or not table.find(enums, value) then
-    value = default
-  end
-
-  if not soft then
-    obj:SetAttribute(name, value)
-  end
-
-  return value
-end
-
 function utility.getTransformedOriginExtents(parent: Instance)
   local originCFrame, originSize = CFrame.identity, vector.zero
 
@@ -400,7 +343,7 @@ function utility.getTransformedOriginExtents(parent: Instance)
     local newParent = parent.Parent
 
     -- step 1: find the full origin cframe by walking up the tree, and processing the upmost attachment
-    local positionScale = utility.getAttribute(parent, "PositionScale", vector.zero, true)
+    local positionScale = attr.get(parent, "PositionScale", vector.zero, true)
 
     if newParent then
       if newParent:IsA("BasePart") and positionScale ~= vector.zero then
@@ -410,8 +353,8 @@ function utility.getTransformedOriginExtents(parent: Instance)
     end
 
     -- step 2: apply rotation on final origin cframe
-    local overrideWorldRotation = utility.getAttribute(parent, "OverrideWorldRotation", false, true)
-    local worldRotation = utility.getAttribute(parent, "WorldRotation", vector.zero, true)
+    local overrideWorldRotation = attr.get(parent, "OverrideWorldRotation", false, true)
+    local worldRotation = attr.get(parent, "WorldRotation", vector.zero, true)
 
     if overrideWorldRotation then
       local rotRad = worldRotation * utility.DEG_TO_RAD
@@ -425,7 +368,7 @@ function utility.getTransformedOriginExtents(parent: Instance)
 end
 
 function utility.getMeshDecals(ref: Model, start: BasePart)
-  local legacy_isFlipbook = utility.getAttribute(ref, "Flipbook", false, true)
+  local legacy_isFlipbook = attr.get(ref, "Flipbook", false, true)
 
   local decals = {}
   local flipbooks = {}

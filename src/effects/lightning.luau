@@ -1,4 +1,5 @@
 --!nolint LocalShadow
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -23,53 +24,53 @@ end
 local function readLightningAttributes(ref: Attachment)
   return {
     -- lightning
-    segments = math.max(utility.getAttribute(ref, "Segments", 8), 2),
-    jaggedness = utility.getRangeAttribute(ref, "Jaggedness", NumberRange.new(0.5, 1), NumberRange.new(0, math.huge)),
-    offsetScale = utility.getAttribute(ref, "OffsetScale", 1),
-    refreshRate = utility.getAttribute(ref, "RefreshRate", 15),
-    independentSegments = utility.getAttribute(ref, "IndependentSegments", false),
-    refreshDuringDissipate = utility.getAttribute(ref, "RefreshDuringDissipate", false),
-    nestedEffectMode = utility.getEnumAttribute(ref, "NestedEffectMode", "None", { "None", "All", "Head", "Tail" }),
+    segments = math.max(attr.get(ref, "Segments", 8), 2),
+    jaggedness = attr.getRange(ref, "Jaggedness", NumberRange.new(0.5, 1), NumberRange.new(0, math.huge)),
+    offsetScale = attr.get(ref, "OffsetScale", 1),
+    refreshRate = attr.get(ref, "RefreshRate", 15),
+    independentSegments = attr.get(ref, "IndependentSegments", false),
+    refreshDuringDissipate = attr.get(ref, "RefreshDuringDissipate", false),
+    nestedEffectMode = attr.getEnum(ref, "NestedEffectMode", "None", { "None", "All", "Head", "Tail" }),
 
     -- color
-    colorSequence = utility.getAttribute(ref, "Color", ColorSequence.new(Color3.new(1, 1, 1))),
-    colorEasingData = utility.getAttribute(ref, "Color_Curve", utility.linear_bezier),
-    colorDuration = utility.getAttribute(ref, "Color_Duration", 1),
+    colorSequence = attr.get(ref, "Color", ColorSequence.new(Color3.new(1, 1, 1))),
+    colorEasingData = attr.get(ref, "Color_Curve", utility.linear_bezier),
+    colorDuration = attr.get(ref, "Color_Duration", 1),
 
     -- transparency
-    transparencyStart = utility.getAttribute(ref, "Transparency_Start", 0),
-    transparencyEnd = utility.getAttribute(ref, "Transparency_End", 0),
+    transparencyStart = attr.get(ref, "Transparency_Start", 0),
+    transparencyEnd = attr.get(ref, "Transparency_End", 0),
 
     -- fill
-    fillColorSequence = utility.getAttribute(ref, "Fill_Color", ColorSequence.new(Color3.new(1, 1, 1))),
-    fillColorEasingData = utility.getAttribute(ref, "Fill_Color_Curve", utility.linear_bezier),
-    fillColorDuration = utility.getAttribute(ref, "Fill_Color_Duration", 1),
-    fillTransparencyStart = utility.getAttribute(ref, "Fill_Transparency_Start", 1),
-    fillTransparencyEnd = utility.getAttribute(ref, "Fill_Transparency_End", 1),
-    fillDepthMode = utility.getEnumAttribute(ref, "Fill_DepthMode", "Occluded", { "AlwaysOnTop", "Occluded" }),
+    fillColorSequence = attr.get(ref, "Fill_Color", ColorSequence.new(Color3.new(1, 1, 1))),
+    fillColorEasingData = attr.get(ref, "Fill_Color_Curve", utility.linear_bezier),
+    fillColorDuration = attr.get(ref, "Fill_Color_Duration", 1),
+    fillTransparencyStart = attr.get(ref, "Fill_Transparency_Start", 1),
+    fillTransparencyEnd = attr.get(ref, "Fill_Transparency_End", 1),
+    fillDepthMode = attr.getEnum(ref, "Fill_DepthMode", "Occluded", { "AlwaysOnTop", "Occluded" }),
 
     -- fade-in
-    fadeInStart = utility.getAttribute(ref, "Fade_In_Start", 1),
-    fadeInDuration = utility.getAttribute(ref, "Fade_In_Duration", 0),
-    fadeInCurveData = utility.getAttribute(ref, "Fade_In_Curve", utility.default_bezier),
+    fadeInStart = attr.get(ref, "Fade_In_Start", 1),
+    fadeInDuration = attr.get(ref, "Fade_In_Duration", 0),
+    fadeInCurveData = attr.get(ref, "Fade_In_Curve", utility.default_bezier),
 
     -- fade-out
-    fadeOutEnd = utility.getAttribute(ref, "Fade_Out_End", 1),
-    fadeOutDuration = utility.getAttribute(ref, "Fade_Out_Duration", 0),
-    fadeOutCurveData = utility.getAttribute(ref, "Fade_Out_Curve", utility.default_bezier),
+    fadeOutEnd = attr.get(ref, "Fade_Out_End", 1),
+    fadeOutDuration = attr.get(ref, "Fade_Out_Duration", 0),
+    fadeOutCurveData = attr.get(ref, "Fade_Out_Curve", utility.default_bezier),
 
     -- length
-    lengthStart = utility.getAttribute(ref, "Length_Start", 1),
-    lengthEnd = utility.getAttribute(ref, "Length_End", 1),
+    lengthStart = attr.get(ref, "Length_Start", 1),
+    lengthEnd = attr.get(ref, "Length_End", 1),
 
     -- dissipation
-    dissipateMode = utility.getEnumAttribute(ref, "Dissipate_Mode", "None", { "None", "Retract", "Scale" }),
-    dissipateDuration = utility.getAttribute(ref, "Dissipate_Duration", 0.5),
-    dissipateCurveData = utility.getAttribute(ref, "Dissipate_Curve", utility.default_bezier),
+    dissipateMode = attr.getEnum(ref, "Dissipate_Mode", "None", { "None", "Retract", "Scale" }),
+    dissipateDuration = attr.get(ref, "Dissipate_Duration", 0.5),
+    dissipateCurveData = attr.get(ref, "Dissipate_Curve", utility.default_bezier),
 
     -- width
-    widthStart = utility.getAttribute(ref, "Width_Start", 2),
-    widthEnd = utility.getAttribute(ref, "Width_End", 0.2),
+    widthStart = attr.get(ref, "Width_Start", 2),
+    widthEnd = attr.get(ref, "Width_End", 0.2),
   }
 end
 
@@ -311,8 +312,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
       table.insert(
         scope,
         tween.fromParams(
-          utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-          utility.getAttribute(ref, "Speed_Duration", 0.1),
+          attr.get(ref, "Speed_Curve", utility.default_bezier),
+          attr.get(ref, "Speed_Duration", 0.1),
           function(alpha, deltaTime)
             ref:SetAttribute("SpeedOverride", utility.lerp(common.speedStart, common.speedEnd, alpha))
             return deltaTime
@@ -572,8 +573,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
         if common.speedStart ~= common.speedEnd and not ref:GetAttribute("SpeedOverride") then
           speedTween = tween.fromParams(
-            utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-            utility.getAttribute(ref, "Speed_Duration", 0.1),
+            attr.get(ref, "Speed_Curve", utility.default_bezier),
+            attr.get(ref, "Speed_Duration", 0.1),
             function(alpha, deltaTime)
               currentSpeed = utility.lerp(common.speedStart, common.speedEnd, alpha)
               return deltaTime
@@ -994,7 +995,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(ref, "Easing_Curve", utility.linear_bezier),
+            attr.get(ref, "Easing_Curve", utility.linear_bezier),
             duration,
             function(alpha, deltaTime, elapsed)
               local scaledDelta = deltaTime * getEffectiveSpeed()

@@ -11,6 +11,7 @@ local ShockwaveRing = require("@vfx/shockwave_ring")
 local ShockwaveLine = require("@vfx/shockwave_line")
 local ShockwaveDebris = require("@vfx/shockwave_debris")
 
+local attr = require("@mod/attributes")
 local types = require("@root/types")
 local utility = require("@mod/utility")
 
@@ -25,8 +26,8 @@ function emitters.particle(
   sharedRefMap: { [Instance]: Instance },
   legacyScale: number
 )
-  local count = utility.getAttribute(obj, "EmitCount", 0)
-  local duration = utility.getAttribute(obj, "EmitDuration", 0)
+  local count = attr.get(obj, "EmitCount", 0)
+  local duration = attr.get(obj, "EmitDuration", 0)
 
   if count <= 0 and duration <= 0 then
     return
@@ -78,8 +79,8 @@ function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
   local unscaled = NumberRange.new(1, 1)
 
   if
-    utility.getAttribute(obj, "Length_Scale_Start", unscaled, true) ~= unscaled
-    or utility.getAttribute(obj, "Length_Scale_End", unscaled, true) ~= unscaled
+    attr.get(obj, "Length_Scale_Start", unscaled, true) ~= unscaled
+    or attr.get(obj, "Length_Scale_End", unscaled, true) ~= unscaled
   then
     local a, b = att0:Clone(), att1:Clone()
 
@@ -165,7 +166,7 @@ function emitters.mesh(
 
   local tasks = {}
 
-  for i = 1, utility.getAttribute(obj, "EmitCount", 1) do
+  for i = 1, attr.get(obj, "EmitCount", 1) do
     table.insert(
       tasks,
       Promise.new(function(resolve)

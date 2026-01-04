@@ -1,3 +1,4 @@
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -9,20 +10,20 @@ function spin.emit(ref: Model, scope: types.scope)
     return
   end
 
-  local rotation = utility.getAttribute(ref, "SpinRotation", vector.zero) * utility.DEG_TO_RAD
+  local rotation = attr.get(ref, "SpinRotation", vector.zero) * utility.DEG_TO_RAD
 
-  local scaleStart = utility.getAttribute(ref, "Scale_Start", 1)
-  local scaleEnd = utility.getAttribute(ref, "Scale_End", 1)
+  local scaleStart = attr.get(ref, "Scale_Start", 1)
+  local scaleEnd = attr.get(ref, "Scale_End", 1)
 
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
 
-  local sync = utility.getAttribute(ref, "SyncPosition", false)
-  local duration = utility.getAttribute(ref, "SpinDuration", 0.5)
+  local sync = attr.get(ref, "SyncPosition", false)
+  local duration = attr.get(ref, "SpinDuration", 0.5)
 
-  local speedDuration = utility.getAttribute(ref, "SpinSpeed_Duration", 0.1)
+  local speedDuration = attr.get(ref, "SpinSpeed_Duration", 0.1)
 
-  local speedStart = utility.getAttribute(ref, "SpinSpeed_Start", 0)
-  local speedEnd = utility.getAttribute(ref, "SpinSpeed_End", 1)
+  local speedStart = attr.get(ref, "SpinSpeed_Start", 0)
+  local speedEnd = attr.get(ref, "SpinSpeed_End", 1)
 
   local currentSpeed = speedStart
 
@@ -32,7 +33,7 @@ function spin.emit(ref: Model, scope: types.scope)
 
   if speedStart ~= speedEnd then
     speedTween = tween.fromParams(
-      utility.getAttribute(ref, "SpinSpeed_Curve", utility.default_bezier),
+      attr.get(ref, "SpinSpeed_Curve", utility.default_bezier),
       speedDuration,
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
@@ -50,7 +51,7 @@ function spin.emit(ref: Model, scope: types.scope)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Scale_Curve", utility.default_bezier),
+        attr.get(ref, "Scale_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           ref:ScaleTo(utility.lerp(scaleStart, scaleEnd, alpha))

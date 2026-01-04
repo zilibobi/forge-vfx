@@ -1,6 +1,7 @@
 --!nolint LocalShadow
 local CollectionService = game:GetService("CollectionService")
 
+local attr = require("@mod/attributes")
 local shape = require("@mod/shape")
 local tween = require("@mod/tween")
 local utility = require("@mod/utility")
@@ -243,35 +244,35 @@ end
 function common.readCommonAttributes(ref: Attachment)
   return {
     -- timing
-    emitDelay = utility.getAttribute(ref, "EmitDelay", 0),
-    emitCount = utility.getAttribute(ref, "EmitCount", 1),
-    emitDuration = utility.getAttribute(ref, "EmitDuration", 0),
-    destroyDelay = utility.getAttribute(ref, "DestroyDelay", 0),
-    duration = utility.getRangeAttribute(ref, "Duration", NumberRange.new(1, 1), NumberRange.new(0, math.huge)),
+    emitDelay = attr.get(ref, "EmitDelay", 0),
+    emitCount = attr.get(ref, "EmitCount", 1),
+    emitDuration = attr.get(ref, "EmitDuration", 0),
+    destroyDelay = attr.get(ref, "DestroyDelay", 0),
+    duration = attr.getRange(ref, "Duration", NumberRange.new(1, 1), NumberRange.new(0, math.huge)),
 
     -- shape/emission
-    shapeType = utility.getEnumAttribute(ref, "Shape", "Box", { "Box", "Cylinder", "Sphere", "Disc" }),
-    shapeStyle = utility.getEnumAttribute(ref, "ShapeStyle", "Volume", { "Volume", "Surface" }),
-    emissionDirection = Enum.NormalId[utility.getEnumAttribute(
+    shapeType = attr.getEnum(ref, "Shape", "Box", { "Box", "Cylinder", "Sphere", "Disc" }),
+    shapeStyle = attr.getEnum(ref, "ShapeStyle", "Volume", { "Volume", "Surface" }),
+    emissionDirection = Enum.NormalId[attr.getEnum(
       ref,
       "EmissionDirection",
       "Top",
       { "Top", "Bottom", "Left", "Right", "Front", "Back" }
     )],
-    face = utility.getEnumAttribute(ref, "ShapeFace", "Outward", { "InAndOut", "Inward", "Outward" }),
-    spreadAngle = utility.getAttribute(ref, "SpreadAngle", vector.zero),
-    partial = utility.getAttribute(ref, "ShapePartial", 1),
+    face = attr.getEnum(ref, "ShapeFace", "Outward", { "InAndOut", "Inward", "Outward" }),
+    spreadAngle = attr.get(ref, "SpreadAngle", vector.zero),
+    partial = attr.get(ref, "ShapePartial", 1),
 
     -- path
-    syncPosition = utility.getAttribute(ref, "SyncPosition", false),
-    mirror = utility.getAttribute(ref, "MirrorPaths", true),
-    mirrorRot = utility.getAttribute(ref, "MirrorRotation", vector.create(0, 0, 180)),
+    syncPosition = attr.get(ref, "SyncPosition", false),
+    mirror = attr.get(ref, "MirrorPaths", true),
+    mirrorRot = attr.get(ref, "MirrorRotation", vector.create(0, 0, 180)),
 
     -- projectile
-    projectileEnabled = utility.getAttribute(ref, "ProjectileEnabled", false),
-    projectileMatchEnd = utility.getAttribute(ref, "MatchEndDirection", false),
-    projectileSpeed = utility.getAttribute(ref, "ProjectileSpeed", 30),
-    projectileLifetime = utility.getRangeAttribute(
+    projectileEnabled = attr.get(ref, "ProjectileEnabled", false),
+    projectileMatchEnd = attr.get(ref, "MatchEndDirection", false),
+    projectileSpeed = attr.get(ref, "ProjectileSpeed", 30),
+    projectileLifetime = attr.getRange(
       ref,
       "ProjectileLifetime",
       NumberRange.new(1, 1),
@@ -279,15 +280,15 @@ function common.readCommonAttributes(ref: Attachment)
     ),
 
     -- hitbox
-    hitboxEnabled = utility.getAttribute(ref, "HitboxEnabled", false),
-    hitboxCollisionGroup = utility.getAttribute(ref, "HitboxCollisionGroup", "Default"),
-    hitboxFilterTag = utility.getAttribute(ref, "HitboxFilterTag", ""),
-    hitboxFilterType = utility.getAttribute(ref, "HitboxFilterType", "Exclude"),
-    hitboxIgnoreCanCollide = utility.getAttribute(ref, "HitboxIgnoreCanCollide", false),
+    hitboxEnabled = attr.get(ref, "HitboxEnabled", false),
+    hitboxCollisionGroup = attr.get(ref, "HitboxCollisionGroup", "Default"),
+    hitboxFilterTag = attr.get(ref, "HitboxFilterTag", ""),
+    hitboxFilterType = attr.get(ref, "HitboxFilterType", "Exclude"),
+    hitboxIgnoreCanCollide = attr.get(ref, "HitboxIgnoreCanCollide", false),
 
     -- speed
-    speedStart = utility.getAttribute(ref, "Speed_Start", 1),
-    speedEnd = utility.getAttribute(ref, "Speed_End", 1),
+    speedStart = attr.get(ref, "Speed_Start", 1),
+    speedEnd = attr.get(ref, "Speed_End", 1),
   }
 end
 
@@ -362,7 +363,7 @@ function common.createPropertyTween(
   table.insert(
     scope,
     tween.fromParams(
-      utility.getAttribute(ref, attrName .. "_Curve", utility.default_bezier),
+      attr.get(ref, attrName .. "_Curve", utility.default_bezier),
       tweenDuration,
       function(alpha, deltaTime)
         setter(utility.lerp(startVal, endVal, alpha))

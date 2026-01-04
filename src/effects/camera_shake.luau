@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -87,23 +88,23 @@ function camera_shake.deinit()
 end
 
 function camera_shake.emit(ref: RayValue, scope: types.scope)
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
-  local emitDuration = utility.getAttribute(ref, "EmitDuration", 0)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
+  local emitDuration = attr.get(ref, "EmitDuration", 0)
 
-  local falloff = utility.getAttribute(ref, "Falloff", 30)
+  local falloff = attr.get(ref, "Falloff", 30)
 
-  local amplitude = utility.getAttribute(ref, "Amplitude", 2.5)
-  local frequency = utility.getAttribute(ref, "Frequency", 0.2)
+  local amplitude = attr.get(ref, "Amplitude", 2.5)
+  local frequency = attr.get(ref, "Frequency", 0.2)
 
-  local fadeInTime = utility.getAttribute(ref, "FadeInTime", 0.3)
-  local fadeOutTime = utility.getAttribute(ref, "FadeOutTime", 2)
-  local sustainTime = utility.getAttribute(ref, "SustainTime", 1)
+  local fadeInTime = attr.get(ref, "FadeInTime", 0.3)
+  local fadeOutTime = attr.get(ref, "FadeOutTime", 2)
+  local sustainTime = attr.get(ref, "SustainTime", 1)
 
-  local posInfluence = utility.getAttribute(ref, "PositionInfluence", vector.one)
-  local rotInfluence = utility.getAttribute(ref, "RotationInfluence", vector.one * 0.2)
+  local posInfluence = attr.get(ref, "PositionInfluence", vector.one)
+  local rotInfluence = attr.get(ref, "RotationInfluence", vector.one * 0.2)
 
-  local speedStart = utility.getAttribute(ref, "Speed_Start", 1)
-  local speedEnd = utility.getAttribute(ref, "Speed_End", 1)
+  local speedStart = attr.get(ref, "Speed_Start", 1)
+  local speedEnd = attr.get(ref, "Speed_End", 1)
 
   local sustained = emitDuration > 0
 
@@ -127,8 +128,8 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
 
   if speedStart ~= speedEnd then
     local speedTween = tween.fromParams(
-      utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-      utility.getAttribute(ref, "Speed_Duration", 0.1),
+      attr.get(ref, "Speed_Curve", utility.default_bezier),
+      attr.get(ref, "Speed_Duration", 0.1),
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
         return deltaTime

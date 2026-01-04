@@ -1,6 +1,7 @@
 --!nolint LocalShadow
 local RunService = game:GetService("RunService")
 
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -27,9 +28,9 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     return
   end
 
-  local legacy_duration = utility.getAttribute(ref, "Duration", 1, true)
+  local legacy_duration = attr.get(ref, "Duration", 1, true)
 
-  local durationRange = utility.getRangeAttribute(
+  local durationRange = attr.getRange(
     ref,
     "EffectDuration",
     NumberRange.new(legacy_duration, legacy_duration),
@@ -38,11 +39,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   local duration = rng:NextNumber(durationRange.Min, durationRange.Max)
 
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
-  local emitDuration = utility.getAttribute(ref, "EmitDuration", 0, true)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
+  local emitDuration = attr.get(ref, "EmitDuration", 0, true)
 
-  local legacy_isFlipbook = utility.getAttribute(ref, "Flipbook", false, true)
-  local legacy_flipbookFadeOffset = utility.getAttribute(ref, "FlipbookFadeOffset", 0, true)
+  local legacy_isFlipbook = attr.get(ref, "Flipbook", false, true)
+  local legacy_flipbookFadeOffset = attr.get(ref, "FlipbookFadeOffset", 0, true)
 
   -- stone age compatibility
   do
@@ -71,8 +72,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   local useEmitDuration = ref:GetAttribute("Enabled") ~= nil and ref:HasTag(utility.ENABLED_VFX_TAG) and duration > 0
 
-  local legacy_decalST = utility.getAttribute(ref, "Decal_StartTransparency", 0, true)
-  local legacy_decalET = utility.getAttribute(ref, "Decal_EndTransparency", 1, true)
+  local legacy_decalST = attr.get(ref, "Decal_StartTransparency", 0, true)
+  local legacy_decalET = attr.get(ref, "Decal_EndTransparency", 1, true)
 
   local partDefaultTp = 0
 
@@ -84,26 +85,26 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     end
   end
 
-  local legacy_meshST = utility.getAttribute(ref, "Mesh_StartTransparency", partDefaultTp, true)
-  local legacy_meshET = utility.getAttribute(ref, "Mesh_EndTransparency", partDefaultTp, true)
+  local legacy_meshST = attr.get(ref, "Mesh_StartTransparency", partDefaultTp, true)
+  local legacy_meshET = attr.get(ref, "Mesh_EndTransparency", partDefaultTp, true)
 
-  local sync = utility.getAttribute(ref, "SyncPosition", false)
+  local sync = attr.get(ref, "SyncPosition", false)
 
-  local speedStart = utility.getAttribute(ref, "Speed_Start", 1)
-  local speedEnd = utility.getAttribute(ref, "Speed_End", 1)
+  local speedStart = attr.get(ref, "Speed_Start", 1)
+  local speedEnd = attr.get(ref, "Speed_End", 1)
 
-  local tpStart = utility.getAttribute(ref, "Part_Transparency_Start", legacy_meshST)
-  local tpEnd = utility.getAttribute(ref, "Part_Transparency_End", legacy_meshET)
+  local tpStart = attr.get(ref, "Part_Transparency_Start", legacy_meshST)
+  local tpEnd = attr.get(ref, "Part_Transparency_End", legacy_meshET)
 
-  local spreadAngle = utility.getAttribute(ref, "SpreadAngle", vector.zero)
+  local spreadAngle = attr.get(ref, "SpreadAngle", vector.zero)
 
-  local rotSpeedStartRange = utility.getRangeAttribute(ref, "Part_RotSpeed_Start", NumberRange.new(0, 0))
-  local rotSpeedEndRange = utility.getRangeAttribute(ref, "Part_RotSpeed_End", NumberRange.new(0, 0))
+  local rotSpeedStartRange = attr.getRange(ref, "Part_RotSpeed_Start", NumberRange.new(0, 0))
+  local rotSpeedEndRange = attr.getRange(ref, "Part_RotSpeed_End", NumberRange.new(0, 0))
 
-  local rotAroundOrigin = utility.getAttribute(ref, "RotAroundOrigin", false)
+  local rotAroundOrigin = attr.get(ref, "RotAroundOrigin", false)
 
-  local minInitRot = utility.getAttribute(ref, "MinInitRot", vector.zero)
-  local maxInitRot = utility.getAttribute(ref, "MaxInitRot", vector.zero)
+  local minInitRot = attr.get(ref, "MinInitRot", vector.zero)
+  local maxInitRot = attr.get(ref, "MaxInitRot", vector.zero)
 
   local rotSpeedStart = rng:NextNumber(rotSpeedStartRange.Min, rotSpeedStartRange.Max)
   local rotSpeedEnd = rng:NextNumber(rotSpeedEndRange.Min, rotSpeedEndRange.Max)
@@ -125,8 +126,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       table.insert(
         scope,
         tween.fromParams(
-          utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-          utility.getAttribute(ref, "Speed_Duration", 0.1),
+          attr.get(ref, "Speed_Curve", utility.default_bezier),
+          attr.get(ref, "Speed_Duration", 0.1),
           function(alpha, deltaTime)
             ref:SetAttribute("SpeedOverride", utility.lerp(speedStart, speedEnd, alpha))
             return deltaTime
@@ -207,8 +208,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   if speedStart ~= speedEnd and not ref:GetAttribute("SpeedOverride") then
     speedTween = tween.fromParams(
-      utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-      utility.getAttribute(ref, "Speed_Duration", 0.1),
+      attr.get(ref, "Speed_Curve", utility.default_bezier),
+      attr.get(ref, "Speed_Duration", 0.1),
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
         return deltaTime
@@ -222,7 +223,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Part_CFrame_Curve", utility.default_bezier),
+        attr.get(ref, "Part_CFrame_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           currentCFrame = CFrame.identity:Lerp(goalCFrameOffset, alpha)
@@ -237,7 +238,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Part_RotSpeed_Curve", utility.default_bezier),
+        attr.get(ref, "Part_RotSpeed_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           currentRotSpeed = utility.lerp(rotSpeedStart, rotSpeedEnd, alpha)
@@ -252,7 +253,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Part_Transparency_Curve", utility.default_bezier),
+        attr.get(ref, "Part_Transparency_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.Transparency = utility.lerp(tpStart, tpEnd, alpha)
@@ -273,7 +274,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Part_Size_Curve", utility.default_bezier),
+        attr.get(ref, "Part_Size_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           local speed = ref:GetAttribute("SpeedOverride") or currentSpeed
@@ -308,7 +309,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(ref, "Mesh_Scale_Curve", utility.default_bezier),
+            attr.get(ref, "Mesh_Scale_Curve", utility.default_bezier),
             duration,
             function(alpha, deltaTime)
               objMesh.Scale = utility.lerp(scaleStart, scaleEnd, alpha)
@@ -380,14 +381,14 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       local from = decal
       local to = fromToMap[from]
 
-      local decal_tpStart = utility.getAttribute(from, "Transparency_Start", legacy_decalST)
-      local decal_tpEnd = utility.getAttribute(from, "Transparency_End", legacy_decalET)
+      local decal_tpStart = attr.get(from, "Transparency_Start", legacy_decalST)
+      local decal_tpEnd = attr.get(from, "Transparency_End", legacy_decalET)
 
       if decal_tpStart ~= decal_tpEnd then
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(from, "Transparency_Curve", utility.default_bezier),
+            attr.get(from, "Transparency_Curve", utility.default_bezier),
             duration,
             function(alpha, deltaTime)
               decal.Transparency = utility.lerp(decal_tpStart, decal_tpEnd, alpha)
@@ -404,7 +405,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(from, "Color_Curve", utility.default_bezier),
+            attr.get(from, "Color_Curve", utility.default_bezier),
             duration,
             function(alpha, deltaTime)
               local a = Oklab.fromSRGB(from.Color3)
@@ -428,8 +429,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           speedTween = speedTween,
           effectDuration = duration,
 
-          curve = utility.getAttribute(from, "Flipbook_Change_Curve", utility.linear_bezier),
-          duration = utility.getAttribute(from, "Flipbook_Change_Duration", duration),
+          curve = attr.get(from, "Flipbook_Change_Curve", utility.linear_bezier),
+          duration = attr.get(from, "Flipbook_Change_Duration", duration),
 
           getSpeed = function()
             return ref:GetAttribute("SpeedOverride") or currentSpeed

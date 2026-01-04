@@ -1,6 +1,7 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
+local attr = require("@mod/attributes")
 local types = require("@root/types")
 local utility = require("@mod/utility")
 local emitters = require("@root/emitters")
@@ -60,7 +61,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
     end
 
     local function onEnabled()
-      local enabled = utility.getAttribute(obj, "Enabled", true)
+      local enabled = attr.get(obj, "Enabled", true)
 
       if enabled then
         local last = 0
@@ -68,7 +69,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
         table.insert(
           tempScope,
           RunService.RenderStepped:Connect(function()
-            local rate = utility.getAttribute(obj, "Rate", 5)
+            local rate = attr.get(obj, "Rate", 5)
             local speed = obj:GetAttribute("SpeedOverride") or 1
 
             if speed == 0 then

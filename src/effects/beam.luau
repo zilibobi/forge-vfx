@@ -1,4 +1,5 @@
 --!nolint LocalShadow
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -9,11 +10,11 @@ local Promise = require("@pkg/Promise")
 local rng = Random.new()
 
 local function getLegacyWidths(obj: Beam, scale: number)
-  local w0 = utility.getAttribute(obj, "Width0", obj.Width0, true) * scale
-  local w1 = utility.getAttribute(obj, "Width1", obj.Width1, true) * scale
+  local w0 = attr.get(obj, "Width0", obj.Width0, true) * scale
+  local w1 = attr.get(obj, "Width1", obj.Width1, true) * scale
 
-  local s_w0 = utility.getAttribute(obj, "StartWidth0", obj.Width0, true) * scale
-  local s_w1 = utility.getAttribute(obj, "StartWidth1", obj.Width1, true) * scale
+  local s_w0 = attr.get(obj, "StartWidth0", obj.Width0, true) * scale
+  local s_w1 = attr.get(obj, "StartWidth1", obj.Width1, true) * scale
 
   return w0, w1, s_w0, s_w1
 end
@@ -25,33 +26,33 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   local a1, a2, a3, a4 = getLegacyWidths(ref, scale)
 
-  local w1 = utility.getAttribute(ref, "Width0_Start", a3)
-  local w2 = utility.getAttribute(ref, "Width0_End", a1)
-  local w3 = utility.getAttribute(ref, "Width1_Start", a4)
-  local w4 = utility.getAttribute(ref, "Width1_End", a2)
+  local w1 = attr.get(ref, "Width0_Start", a3)
+  local w2 = attr.get(ref, "Width0_End", a1)
+  local w3 = attr.get(ref, "Width1_Start", a4)
+  local w4 = attr.get(ref, "Width1_End", a2)
 
-  local c1 = utility.getAttribute(ref, "CurveSize0_Start", obj.CurveSize0)
-  local c2 = utility.getAttribute(ref, "CurveSize0_End", obj.CurveSize0)
-  local c3 = utility.getAttribute(ref, "CurveSize1_Start", obj.CurveSize1)
-  local c4 = utility.getAttribute(ref, "CurveSize1_End", obj.CurveSize1)
+  local c1 = attr.get(ref, "CurveSize0_Start", obj.CurveSize0)
+  local c2 = attr.get(ref, "CurveSize0_End", obj.CurveSize0)
+  local c3 = attr.get(ref, "CurveSize1_Start", obj.CurveSize1)
+  local c4 = attr.get(ref, "CurveSize1_End", obj.CurveSize1)
 
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
 
-  local legacy_duration = utility.getAttribute(ref, "Duration", 1, true)
-  local legacy_tpScale = utility.getAttribute(ref, "EndTransparencyScale", 1, true)
+  local legacy_duration = attr.get(ref, "Duration", 1, true)
+  local legacy_tpScale = attr.get(ref, "EndTransparencyScale", 1, true)
 
-  local durationRange = utility.getRangeAttribute(
+  local durationRange = attr.getRange(
     ref,
     "EffectDuration",
     NumberRange.new(legacy_duration, legacy_duration),
     NumberRange.new(0, math.huge)
   )
 
-  local lengthScaleRangeStart = utility.getAttribute(ref, "Length_Scale_Start", NumberRange.new(1, 1))
-  local lengthScaleRangeEnd = utility.getAttribute(ref, "Length_Scale_End", NumberRange.new(1, 1))
+  local lengthScaleRangeStart = attr.get(ref, "Length_Scale_Start", NumberRange.new(1, 1))
+  local lengthScaleRangeEnd = attr.get(ref, "Length_Scale_End", NumberRange.new(1, 1))
 
-  local texLengthStart = utility.getAttribute(ref, "Length_Texture_Start", ref.TextureLength)
-  local textLengthEnd = utility.getAttribute(ref, "Length_Texture_End", ref.TextureLength)
+  local texLengthStart = attr.get(ref, "Length_Texture_Start", ref.TextureLength)
+  local textLengthEnd = attr.get(ref, "Length_Texture_End", ref.TextureLength)
 
   local duration = rng:NextNumber(durationRange.Min, durationRange.Max)
 
@@ -59,14 +60,14 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
   local lengthScaleStart = rng:NextNumber(lengthScaleRangeStart.Min, lengthScaleRangeStart.Max)
 
   local tStart, tEnd =
-    utility.getAttribute(ref, "Transparency_Scale_Start", 1),
-    utility.getAttribute(ref, "Transparency_Scale_End", legacy_tpScale)
+    attr.get(ref, "Transparency_Scale_Start", 1),
+    attr.get(ref, "Transparency_Scale_End", legacy_tpScale)
 
-  local texSpeedStart = utility.getAttribute(ref, "Speed_Texture_Start", ref.TextureSpeed)
-  local texSpeedEnd = utility.getAttribute(ref, "Speed_Texture_End", ref.TextureSpeed)
+  local texSpeedStart = attr.get(ref, "Speed_Texture_Start", ref.TextureSpeed)
+  local texSpeedEnd = attr.get(ref, "Speed_Texture_End", ref.TextureSpeed)
 
-  local speedStart = utility.getAttribute(ref, "Speed_Start", 1)
-  local speedEnd = utility.getAttribute(ref, "Speed_End", 1)
+  local speedStart = attr.get(ref, "Speed_Start", 1)
+  local speedEnd = attr.get(ref, "Speed_End", 1)
 
   local baseTexSpeed = obj.TextureSpeed
 
@@ -84,7 +85,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   if texSpeedStart ~= texSpeedEnd then
     tween.fromParams(
-      utility.getAttribute(ref, "Speed_Texture_Curve", utility.default_bezier),
+      attr.get(ref, "Speed_Texture_Curve", utility.default_bezier),
       duration,
       function(alpha, deltaTime)
         baseTexSpeed = utility.lerp(texSpeedStart, texSpeedEnd, alpha)
@@ -97,8 +98,8 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   if speedStart ~= speedEnd then
     speedTween = tween.fromParams(
-      utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-      utility.getAttribute(obj, "Speed_Duration", 0.1),
+      attr.get(ref, "Speed_Curve", utility.default_bezier),
+      attr.get(obj, "Speed_Duration", 0.1),
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
 
@@ -177,7 +178,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Transparency_Scale_Curve", utility.default_bezier),
+        attr.get(ref, "Transparency_Scale_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           setTScale(utility.lerp(tStart, tEnd, alpha))
@@ -194,7 +195,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Length_Texture_Curve", utility.default_bezier),
+        attr.get(ref, "Length_Texture_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.TextureLength = utility.lerp(texLengthStart, textLengthEnd, alpha)
@@ -209,7 +210,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Length_Scale_Curve", utility.default_bezier),
+        attr.get(ref, "Length_Scale_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           local x = utility.lerp(lengthScaleStart, lengthScaleEnd, alpha)
@@ -229,7 +230,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Width0_Curve", utility.default_bezier),
+        attr.get(ref, "Width0_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.Width0 = utility.lerp(w1, w2, alpha)
@@ -246,7 +247,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "Width1_Curve", utility.default_bezier),
+        attr.get(ref, "Width1_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.Width1 = utility.lerp(w3, w4, alpha)
@@ -263,7 +264,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "CurveSize0_Curve", utility.default_bezier),
+        attr.get(ref, "CurveSize0_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.CurveSize0 = utility.lerp(c1, c2, alpha)
@@ -280,7 +281,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
     table.insert(
       scope,
       tween.fromParams(
-        utility.getAttribute(ref, "CurveSize1_Curve", utility.default_bezier),
+        attr.get(ref, "CurveSize1_Curve", utility.default_bezier),
         duration,
         function(alpha, deltaTime)
           obj.CurveSize1 = utility.lerp(c3, c4, alpha)
@@ -304,8 +305,8 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
       speedTween = speedTween,
       effectDuration = duration,
 
-      curve = utility.getAttribute(ref, "Flipbook_Change_Curve", utility.linear_bezier),
-      duration = utility.getAttribute(ref, "Flipbook_Change_Duration", duration),
+      curve = attr.get(ref, "Flipbook_Change_Curve", utility.linear_bezier),
+      duration = attr.get(ref, "Flipbook_Change_Duration", duration),
 
       getSpeed = function()
         return currentSpeed

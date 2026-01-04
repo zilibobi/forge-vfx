@@ -1,5 +1,6 @@
 local CollectionService = game:GetService("CollectionService")
 
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -26,14 +27,14 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
     return
   end
 
-  local raydir = utility.getAttribute(origin, "RayDirection", vector.create(0, -50, 0))
+  local raydir = attr.get(origin, "RayDirection", vector.create(0, -50, 0))
 
-  local rayColGroup = utility.getAttribute(origin, "RayCollisionGroup", "Default")
-  local rayFilterTag = utility.getAttribute(origin, "FilterTag", "")
-  local rayFilterType = utility.getAttribute(origin, "FilterType", "Exclude")
+  local rayColGroup = attr.get(origin, "RayCollisionGroup", "Default")
+  local rayFilterTag = attr.get(origin, "FilterTag", "")
+  local rayFilterType = attr.get(origin, "FilterType", "Exclude")
 
-  local rayIgnoreWater = utility.getAttribute(origin, "IgnoreWater", true)
-  local rayIgnoreCanCollide = utility.getAttribute(origin, "IgnoreCanCollide", false)
+  local rayIgnoreWater = attr.get(origin, "IgnoreWater", true)
+  local rayIgnoreCanCollide = attr.get(origin, "IgnoreCanCollide", false)
 
   local params = RaycastParams.new()
   params.CollisionGroup = rayColGroup
@@ -46,41 +47,41 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
     params:AddToFilter({ workspace.Terrain })
   end
 
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
 
-  local radius = utility.getAttribute(ref, "Radius", 5)
-  local segments = utility.getAttribute(ref, "Segments", 7)
+  local radius = attr.get(ref, "Radius", 5)
+  local segments = attr.get(ref, "Segments", 7)
 
-  local lifetime = utility.getRangeAttribute(ref, "Lifetime", NumberRange.new(2, 3), NumberRange.new(0, math.huge))
+  local lifetime = attr.getRange(ref, "Lifetime", NumberRange.new(2, 3), NumberRange.new(0, math.huge))
 
-  local old_partOffset = utility.getAttribute(ref, "PartOffset", vector.zero, true)
+  local old_partOffset = attr.get(ref, "PartOffset", vector.zero, true)
 
-  local baseOffset = utility.getAttribute(ref, "BaseOffset", old_partOffset)
-  local offsetStart = utility.getAttribute(ref, "Offset_Start", old_partOffset)
-  local offsetEnd = utility.getAttribute(ref, "Offset_End", old_partOffset)
+  local baseOffset = attr.get(ref, "BaseOffset", old_partOffset)
+  local offsetStart = attr.get(ref, "Offset_Start", old_partOffset)
+  local offsetEnd = attr.get(ref, "Offset_End", old_partOffset)
 
-  local offsetStartDuration = utility.getAttribute(ref, "Offset_Start_Duration", 0.5)
-  local offsetEndDuration = utility.getAttribute(ref, "Offset_End_Duration", 0.5)
+  local offsetStartDuration = attr.get(ref, "Offset_Start_Duration", 0.5)
+  local offsetEndDuration = attr.get(ref, "Offset_End_Duration", 0.5)
 
-  local sizeScaleStart = utility.getAttribute(ref, "SizeScaleStart", vector.zero)
-  local sizeScaleEnd = utility.getAttribute(ref, "SizeScaleEnd", vector.zero)
+  local sizeScaleStart = attr.get(ref, "SizeScaleStart", vector.zero)
+  local sizeScaleEnd = attr.get(ref, "SizeScaleEnd", vector.zero)
 
-  local minSize = utility.getAttribute(ref, "MinSize", vector.create(2, 1, 2))
-  local maxSize = utility.getAttribute(ref, "MaxSize", vector.create(3, 2, 3))
+  local minSize = attr.get(ref, "MinSize", vector.create(2, 1, 2))
+  local maxSize = attr.get(ref, "MaxSize", vector.create(3, 2, 3))
 
-  local old_sizeCurve = utility.getAttribute(ref, "Size_Curve", utility.default_bezier, true)
-  local old_sizeDuration = utility.getAttribute(ref, "Size_Duration", 0.5, true)
+  local old_sizeCurve = attr.get(ref, "Size_Curve", utility.default_bezier, true)
+  local old_sizeDuration = attr.get(ref, "Size_Duration", 0.5, true)
 
-  local sizeStartCurve = utility.getAttribute(ref, "Size_Start_Curve", old_sizeCurve)
-  local sizeEndCurve = utility.getAttribute(ref, "Size_End_Curve", old_sizeCurve)
+  local sizeStartCurve = attr.get(ref, "Size_Start_Curve", old_sizeCurve)
+  local sizeEndCurve = attr.get(ref, "Size_End_Curve", old_sizeCurve)
 
-  local sizeStartDuration = utility.getAttribute(ref, "Size_Start_Duration", old_sizeDuration)
-  local sizeEndDuration = utility.getAttribute(ref, "Size_End_Duration", old_sizeDuration)
+  local sizeStartDuration = attr.get(ref, "Size_Start_Duration", old_sizeDuration)
+  local sizeEndDuration = attr.get(ref, "Size_End_Duration", old_sizeDuration)
 
-  local tpDuration = utility.getAttribute(ref, "Transparency_Duration", 0.5)
+  local tpDuration = attr.get(ref, "Transparency_Duration", 0.5)
 
-  local tpStart = utility.getAttribute(ref, "Transparency_Start", 0)
-  local tpEnd = utility.getAttribute(ref, "Transparency_End", 0)
+  local tpStart = attr.get(ref, "Transparency_Start", 0)
+  local tpEnd = attr.get(ref, "Transparency_End", 0)
 
   task.wait(emitDelay)
 
@@ -160,7 +161,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
 
     if offsetStart ~= baseOffset then
       offsetTween = tween.fromParams(
-        utility.getAttribute(ref, "Offset_Start_Curve", utility.default_bezier),
+        attr.get(ref, "Offset_Start_Curve", utility.default_bezier),
         offsetStartDuration,
         function(alpha, deltaTime)
           currentOffset = offsetStart:Lerp(baseOffset, alpha)
@@ -214,7 +215,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(ref, "Offset_End_Curve", utility.default_bezier),
+            attr.get(ref, "Offset_End_Curve", utility.default_bezier),
             offsetEndDuration,
             function(alpha, deltaTime)
               part.CFrame = CFrame.new(currentOffset:Lerp(offsetEnd, alpha)) * rotCF
@@ -228,7 +229,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
         table.insert(
           scope,
           tween.fromParams(
-            utility.getAttribute(ref, "Transparency_Curve", utility.default_bezier),
+            attr.get(ref, "Transparency_Curve", utility.default_bezier),
             tpDuration,
             function(alpha, deltaTime)
               part.Transparency = utility.lerp(startTp, tpEnd, alpha)

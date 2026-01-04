@@ -1,6 +1,7 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -56,17 +57,17 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
   local params
 
-  local inherit = utility.getAttribute(ref, "InheritanceEnabled", true)
-  local inheritRadius = utility.getAttribute(ref, "InheritanceRadius", 5)
+  local inherit = attr.get(ref, "InheritanceEnabled", true)
+  local inheritRadius = attr.get(ref, "InheritanceRadius", 5)
 
   if inherit then
-    local inheritMaxResults = utility.getAttribute(ref, "InheritanceMaxResults", 5)
+    local inheritMaxResults = attr.get(ref, "InheritanceMaxResults", 5)
 
-    local rayColGroup = utility.getAttribute(origin, "RayCollisionGroup", "Default")
-    local rayFilterTag = utility.getAttribute(origin, "FilterTag", "")
-    local rayFilterType = utility.getAttribute(origin, "FilterType", "Exclude")
+    local rayColGroup = attr.get(origin, "RayCollisionGroup", "Default")
+    local rayFilterTag = attr.get(origin, "FilterTag", "")
+    local rayFilterType = attr.get(origin, "FilterType", "Exclude")
 
-    local rayIgnoreCanCollide = utility.getAttribute(origin, "IgnoreCanCollide", false)
+    local rayIgnoreCanCollide = attr.get(origin, "IgnoreCanCollide", false)
 
     params = OverlapParams.new()
     params.MaxParts = inheritMaxResults
@@ -80,33 +81,33 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
     end
   end
 
-  local emitDelay = utility.getAttribute(ref, "EmitDelay", 0)
+  local emitDelay = attr.get(ref, "EmitDelay", 0)
 
-  local amount = utility.getRangeAttribute(ref, "Amount", NumberRange.new(5, 10), NumberRange.new(0, math.huge))
-  local lifetime = utility.getRangeAttribute(ref, "Lifetime", NumberRange.new(2, 3), NumberRange.new(0, math.huge))
-  local airtime = utility.getRangeAttribute(ref, "Airtime", NumberRange.new(0.5, 0.5), NumberRange.new(0, math.huge))
+  local amount = attr.getRange(ref, "Amount", NumberRange.new(5, 10), NumberRange.new(0, math.huge))
+  local lifetime = attr.getRange(ref, "Lifetime", NumberRange.new(2, 3), NumberRange.new(0, math.huge))
+  local airtime = attr.getRange(ref, "Airtime", NumberRange.new(0.5, 0.5), NumberRange.new(0, math.huge))
 
-  local linmag = utility.getRangeAttribute(ref, "LinearMagnitude", NumberRange.new(15, 25))
-  local angmag = utility.getRangeAttribute(ref, "AngularMagnitude", NumberRange.new(5, 15))
+  local linmag = attr.getRange(ref, "LinearMagnitude", NumberRange.new(15, 25))
+  local angmag = attr.getRange(ref, "AngularMagnitude", NumberRange.new(5, 15))
 
-  local sizeScaleEnd = utility.getAttribute(ref, "SizeScaleEnd", vector.zero)
+  local sizeScaleEnd = attr.get(ref, "SizeScaleEnd", vector.zero)
 
-  local minSize = utility.getAttribute(ref, "MinSize", vector.create(2, 1, 2))
-  local maxSize = utility.getAttribute(ref, "MaxSize", vector.create(3, 2, 3))
+  local minSize = attr.get(ref, "MinSize", vector.create(2, 1, 2))
+  local maxSize = attr.get(ref, "MaxSize", vector.create(3, 2, 3))
 
-  local minDir = utility.getAttribute(ref, "MinDirection", -vector.one)
-  local maxDir = utility.getAttribute(ref, "MaxDirection", vector.one)
+  local minDir = attr.get(ref, "MinDirection", -vector.one)
+  local maxDir = attr.get(ref, "MaxDirection", vector.one)
 
   local count = rng:NextInteger(amount.Min, amount.Max)
 
-  local sizeCurve = utility.getAttribute(ref, "Size_Curve", utility.default_bezier)
-  local tpCurve = utility.getAttribute(ref, "Transparency_Curve", utility.default_bezier)
+  local sizeCurve = attr.get(ref, "Size_Curve", utility.default_bezier)
+  local tpCurve = attr.get(ref, "Transparency_Curve", utility.default_bezier)
 
-  local tpDuration = utility.getAttribute(ref, "Transparency_Duration", 0.5)
-  local sizeDuration = utility.getAttribute(ref, "Size_Duration", 0.5)
+  local tpDuration = attr.get(ref, "Transparency_Duration", 0.5)
+  local sizeDuration = attr.get(ref, "Size_Duration", 0.5)
 
-  local tpStart = utility.getAttribute(ref, "Transparency_Start", 0)
-  local tpEnd = utility.getAttribute(ref, "Transparency_End", 1)
+  local tpStart = attr.get(ref, "Transparency_Start", 0)
+  local tpEnd = attr.get(ref, "Transparency_End", 1)
 
   local partData = {}
   local promises = {}

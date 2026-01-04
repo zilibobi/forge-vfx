@@ -1,3 +1,4 @@
+local attr = require("@mod/attributes")
 local lerp = require("@mod/lerp")
 local tween = require("@mod/tween")
 local types = require("@root/types")
@@ -10,10 +11,10 @@ local prop = {}
 function prop.emit(parent: Instance, obj: RayValue, scope: types.scope)
   local property = obj.Name
 
-  local emitDelay = utility.getAttribute(obj, "EmitDelay", 0)
-  local resetOnFinish = utility.getAttribute(obj, "ResetOnFinish", true)
+  local emitDelay = attr.get(obj, "EmitDelay", 0)
+  local resetOnFinish = attr.get(obj, "ResetOnFinish", true)
 
-  local durationRange = utility.getRangeAttribute(obj, "Duration", NumberRange.new(1, 1), NumberRange.new(0, math.huge))
+  local durationRange = attr.getRange(obj, "Duration", NumberRange.new(1, 1), NumberRange.new(0, math.huge))
 
   if emitDelay > 0 then
     task.wait(emitDelay)
@@ -38,8 +39,8 @@ function prop.emit(parent: Instance, obj: RayValue, scope: types.scope)
 
   local duration = rng:NextNumber(durationRange.Min, durationRange.Max)
 
-  local speedStart = utility.getAttribute(obj, "Speed_Start", 1)
-  local speedEnd = utility.getAttribute(obj, "Speed_End", 1)
+  local speedStart = attr.get(obj, "Speed_Start", 1)
+  local speedEnd = attr.get(obj, "Speed_End", 1)
 
   local currentSpeed = speedStart
 
@@ -47,8 +48,8 @@ function prop.emit(parent: Instance, obj: RayValue, scope: types.scope)
 
   if speedStart ~= speedEnd then
     speedTween = tween.fromParams(
-      utility.getAttribute(obj, "Speed_Curve", utility.default_bezier),
-      utility.getAttribute(obj, "Speed_Duration", 0.1),
+      attr.get(obj, "Speed_Curve", utility.default_bezier),
+      attr.get(obj, "Speed_Duration", 0.1),
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
         return deltaTime
@@ -63,7 +64,7 @@ function prop.emit(parent: Instance, obj: RayValue, scope: types.scope)
   table.insert(
     scope,
     tween.fromParams(
-      utility.getAttribute(obj, "Easing_Curve", utility.linear_bezier),
+      attr.get(obj, "Easing_Curve", utility.linear_bezier),
       duration,
       function(alpha, deltaTime)
         parent[property] = lfunc(startValue, endValue, alpha)

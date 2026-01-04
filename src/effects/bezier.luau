@@ -1,6 +1,7 @@
 --!nolint LocalShadow
 local RunService = game:GetService("RunService")
 
+local attr = require("@mod/attributes")
 local tween = require("@mod/tween")
 local types = require("@root/types")
 local utility = require("@mod/utility")
@@ -25,19 +26,19 @@ end
 local function readBezierAttributes(ref: Attachment)
   return {
     -- animation
-    facePath = utility.getAttribute(ref, "FacePath", false),
-    arcSpace = utility.getAttribute(ref, "ArcSpace", false),
+    facePath = attr.get(ref, "FacePath", false),
+    arcSpace = attr.get(ref, "ArcSpace", false),
 
     -- rotation
-    rotSpeedStart = utility.getRangeAttribute(ref, "RotSpeed_Start", NumberRange.new(0, 0)),
-    rotSpeedEnd = utility.getRangeAttribute(ref, "RotSpeed_End", NumberRange.new(0, 0)),
-    minInitRot = utility.getAttribute(ref, "MinInitRot", vector.zero),
-    maxInitRot = utility.getAttribute(ref, "MaxInitRot", vector.zero),
+    rotSpeedStart = attr.getRange(ref, "RotSpeed_Start", NumberRange.new(0, 0)),
+    rotSpeedEnd = attr.getRange(ref, "RotSpeed_End", NumberRange.new(0, 0)),
+    minInitRot = attr.get(ref, "MinInitRot", vector.zero),
+    maxInitRot = attr.get(ref, "MaxInitRot", vector.zero),
 
     -- curves
-    speedCurve = utility.getAttribute(ref, "Speed_Curve", utility.default_bezier),
-    speedDuration = utility.getAttribute(ref, "Speed_Duration", 0.1),
-    easingCurve = utility.getAttribute(ref, "Easing_Curve", utility.linear_bezier),
+    speedCurve = attr.get(ref, "Speed_Curve", utility.default_bezier),
+    speedDuration = attr.get(ref, "Speed_Duration", 0.1),
+    easingCurve = attr.get(ref, "Easing_Curve", utility.linear_bezier),
   }
 end
 

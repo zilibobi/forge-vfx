@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 
+local attr = require("@mod/attributes")
 local types = require("@root/types")
 local utility = require("@mod/utility")
 
@@ -10,11 +11,11 @@ function screen.emit(ref: BasePart, scope: types.scope)
     return
   end
 
-  local scale = utility.getAttribute(ref, "PartScale", vector.one)
-  local distance = utility.getAttribute(ref, "PartDistance", 1.5)
+  local scale = attr.get(ref, "PartScale", vector.one)
+  local distance = attr.get(ref, "PartDistance", 1.5)
 
-  local pos = utility.getAttribute(ref, "OffsetPosition", vector.zero)
-  local rot = utility.getAttribute(ref, "OffsetRotation", vector.zero) * utility.DEG_TO_RAD
+  local pos = attr.get(ref, "OffsetPosition", vector.zero)
+  local rot = attr.get(ref, "OffsetRotation", vector.zero) * utility.DEG_TO_RAD
 
   local originalCF = ref.CFrame
   local originalSize = ref.Size
