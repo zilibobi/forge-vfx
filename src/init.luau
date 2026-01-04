@@ -85,9 +85,11 @@ Copyright (c) 2025 zilibobi
 
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local logger = require("@mod/logger")
 local utility = require("@mod/utility")
+local attributes = require("@mod/attributes")
 
 local Bezier = require("@vfx/bezier")
 local Lightning = require("@vfx/lightning")
@@ -219,6 +221,26 @@ end
 
 function api.emitWithDepth(depth: number, ...: Instance)
   return fullEmit(1, depth, ...)
+end
+
+function api.cacheAttributes(obj: Instance)
+  if utility.SERVER_CONTEXT then
+    logger.error("attributes can only be cached in a client-side context")
+  end
+
+  if not obj:IsDescendantOf(ReplicatedStorage) then
+    logger.error("attributes can only be cached for VFX inside ReplicatedStorage")
+  end
+
+  attributes.cache(obj)
+end
+
+function api.restoreAttributes(obj: Instance)
+  if utility.SERVER_CONTEXT then
+    logger.error("attributes can only be restored in a client-side context")
+  end
+
+  attributes.restore(obj)
 end
 
 return api

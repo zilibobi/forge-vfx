@@ -23,6 +23,8 @@ utility.SCREENSHAKE_TAG = "CameraShake"
 utility.ENABLED_VFX_TAG = "ConstantVFX"
 utility.TEXTURE_LOAD_TAG = "LoadVFXTextures"
 
+utility.ATTR_CACHE_ID = "U"
+
 utility.CLEANUP_TAG = "__forge__cleanupOnExit"
 utility.EMIT_EXCLUDE_TAG = "__forge_excludeFromEmit"
 
