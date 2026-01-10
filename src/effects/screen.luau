@@ -48,7 +48,7 @@ function screen.emit(ref: BasePart, scope: types.scope)
   else
     local id = utility.getRandomId()
 
-    RunService:BindToRenderStep(id, utility.RENDER_PRIORITY + scope.depth, frame)
+    RunService:BindToRenderStep(id, Enum.RenderPriority.Last.Value + 2 + scope.depth, frame)
 
     table.insert(scope, function()
       RunService:UnbindFromRenderStep(id)
