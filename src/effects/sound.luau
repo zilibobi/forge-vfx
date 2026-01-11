@@ -106,20 +106,26 @@ local function createSoundClone(ref: Sound, sourceSound: Sound, scope: types.sco
   return clone, partClone
 end
 
-local function playSingleSound(ref: Sound, clone: Sound, partClone: Part?, scope: types.scope): RBXScriptConnection?
+local function playSingleSound(
+  ref: Sound,
+  src: Sound,
+  clone: Sound,
+  partClone: Part?,
+  scope: types.scope
+): RBXScriptConnection?
   local currentSpeed = clone.PlaybackSpeed
 
-  local volumeEnd = attr.get(ref, "Volume_End", clone.Volume)
-  local volumeStart = attr.get(ref, "Volume_Start", clone.Volume)
+  local volumeEnd = attr.get(src, "Volume_End", clone.Volume)
+  local volumeStart = attr.get(src, "Volume_Start", clone.Volume)
 
   clone.Volume = volumeStart
 
   if volumeStart ~= volumeEnd then
-    local volumeDuration = attr.get(ref, "Volume_Duration", clone.TimeLength)
+    local volumeDuration = attr.get(src, "Volume_Duration", clone.TimeLength)
 
     table.insert(
       scope,
-      tween.fromParams(attr.get(ref, "Volume_Curve", utility.default_bezier), volumeDuration, function(alpha, deltaTime)
+      tween.fromParams(attr.get(src, "Volume_Curve", utility.default_bezier), volumeDuration, function(alpha, deltaTime)
         clone.Volume = utility.lerp(volumeStart, volumeEnd, alpha)
         return deltaTime * currentSpeed
       end)
@@ -128,18 +134,18 @@ local function playSingleSound(ref: Sound, clone: Sound, partClone: Part?, scope
     clone.Volume = volumeStart
   end
 
-  local speedEnd = attr.get(ref, "Speed_End", clone.PlaybackSpeed)
-  local speedStart = attr.get(ref, "Speed_Start", clone.PlaybackSpeed)
+  local speedEnd = attr.get(src, "Speed_End", clone.PlaybackSpeed)
+  local speedStart = attr.get(src, "Speed_Start", clone.PlaybackSpeed)
 
   currentSpeed = speedStart
 
   local speedTween: RBXScriptConnection? = nil
 
   if speedStart ~= speedEnd then
-    local speedDuration = attr.get(ref, "Speed_Duration", clone.TimeLength)
+    local speedDuration = attr.get(src, "Speed_Duration", clone.TimeLength)
 
     speedTween = tween.fromParams(
-      attr.get(ref, "Speed_Curve", utility.default_bezier),
+      attr.get(src, "Speed_Curve", utility.default_bezier),
       speedDuration,
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
@@ -153,19 +159,19 @@ local function playSingleSound(ref: Sound, clone: Sound, partClone: Part?, scope
     clone.PlaybackSpeed = speedStart
   end
 
-  local rolloffEnd = attr.get(ref, "RollOff_End", clone.RollOffMaxDistance)
-  local rolloffStart = attr.get(ref, "RollOff_Start", clone.RollOffMaxDistance)
+  local rolloffEnd = attr.get(src, "RollOff_End", clone.RollOffMinDistance)
+  local rolloffStart = attr.get(src, "RollOff_Start", clone.RollOffMinDistance)
 
   if rolloffStart ~= rolloffEnd then
-    local rolloffDuration = attr.get(ref, "RollOff_Duration", clone.TimeLength)
+    local rolloffDuration = attr.get(src, "RollOff_Duration", clone.TimeLength)
 
     table.insert(
       scope,
       tween.fromParams(
-        attr.get(ref, "RollOff_Curve", utility.default_bezier),
+        attr.get(src, "RollOff_Curve", utility.default_bezier),
         rolloffDuration,
         function(alpha, deltaTime)
-          clone.RollOffMaxDistance = utility.lerp(rolloffStart, rolloffEnd, alpha)
+          clone.RollOffMinDistance = utility.lerp(rolloffStart, rolloffEnd, alpha)
           return deltaTime * currentSpeed
         end,
         speedTween
@@ -235,6 +241,8 @@ function sound.emit(ref: Sound, scope: types.scope)
   local repeatCount = attr.get(ref, "RepeatCount", 1)
   local repeatInterval = attr.getRange(ref, "RepeatInterval", NumberRange.new(0, 0))
 
+  local inheritPoolAttributes = attr.get(ref, "SoundPoolInheritAttributes", false)
+
   local useDuration = emitDuration > 0
 
   task.wait(emitDelay)
@@ -248,13 +256,15 @@ function sound.emit(ref: Sound, scope: types.scope)
       continue
     end
 
+    local src = if inheritPoolAttributes and sourceSound ~= ref then sourceSound else ref
+
     for r = 1, repeatCount do
       local clone, partClone = createSoundClone(ref, sourceSound, scope)
 
       table.insert(
         promises,
         Promise.new(function(resolve)
-          playSingleSound(ref, clone, partClone, scope)
+          playSingleSound(ref, src, clone, partClone, scope)
 
           if useDuration then
             task.wait(emitDuration)
