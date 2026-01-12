@@ -8,7 +8,7 @@ local rng = Random.new()
 
 local tweener = {}
 
-function tweener.emit(parent: Instance, obj: RayValue, scope: types.scope, isAttribute: boolean)
+function tweener.emit(obj: RayValue, scope: types.scope, isAttribute: boolean)
   local target = utility.getTarget(obj)
 
   if not target then
