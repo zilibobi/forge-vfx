@@ -60,14 +60,15 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
   local inherit = attr.get(ref, "InheritanceEnabled", true)
   local inheritRadius = attr.get(ref, "InheritanceRadius", 5)
 
+  local rayColGroup = attr.get(origin, "RayCollisionGroup", "Default")
+
+  local rayFilterTag = attr.get(origin, "FilterTag", "")
+  local rayFilterType = attr.get(origin, "FilterType", "Exclude")
+
+  local rayIgnoreCanCollide = attr.get(origin, "IgnoreCanCollide", false)
+
   if inherit then
     local inheritMaxResults = attr.get(ref, "InheritanceMaxResults", 5)
-
-    local rayColGroup = attr.get(origin, "RayCollisionGroup", "Default")
-    local rayFilterTag = attr.get(origin, "FilterTag", "")
-    local rayFilterType = attr.get(origin, "FilterType", "Exclude")
-
-    local rayIgnoreCanCollide = attr.get(origin, "IgnoreCanCollide", false)
 
     params = OverlapParams.new()
     params.MaxParts = inheritMaxResults
@@ -138,7 +139,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
     local part = part_cache:get(id)
 
-    local realPart = part._getReal()
+    local realPart = part._getReal() :: BasePart
 
     utility.copyProperties(ref, realPart, utility.COPY_PART_PROPERTIES)
     utility.copyProperties(ref, realPart, utility.COPY_EXTENDED_PART_PROPERTIES)
@@ -154,6 +155,32 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
     end
 
     local emitOnFinish = scope.effects.prepareEmitOnFinish(realPart, scope)
+    local emitOnImpact = scope.effects.prepareEmitFolder(realPart, "EmitOnImpact", scope)
+
+    if emitOnImpact and #emitOnImpact:GetChildren() > 0 then
+      local conn
+      conn = realPart.Touched:Connect(function(hit)
+        if
+          (not rayIgnoreCanCollide and not hit:CanCollideWith(realPart)) -- ignore parts we can't collide with if they can be ignored
+          or hit:IsDescendantOf(workspace.Terrain) -- ignore all debris parts/other effects
+          or (rayFilterType == "Exclude" and hit:HasTag(rayFilterTag)) -- ignore all excluded tags
+        then
+          return
+        end
+
+        conn:Disconnect()
+
+        local env = scope.effects.emitFromFolder(emitOnImpact, realPart, scope.depth + 1)
+        table.insert(promises, env.Finished)
+      end)
+
+      table.insert(scope, function()
+        if conn then
+          conn:Disconnect()
+          conn = nil
+        end
+      end)
+    end
 
     part.Anchored = false
     part.CanCollide = true

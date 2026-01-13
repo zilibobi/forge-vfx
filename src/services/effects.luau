@@ -44,8 +44,6 @@ function effects.deinit()
   api_ref = nil
 end
 
--- Emits nested effects from a list of instances
--- This is the function that effects should use for emitting nested effects
 function effects.emit(depth: number, ...: Instance): types.EmitEnv
   if not api_ref or not api_ref.setup then
     logger.error("effects service not initialized")
@@ -181,24 +179,22 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
   return env
 end
 
--- Helper function to prepare EmitOnFinish folder
--- Call this when setting up an effect to extract the EmitOnFinish folder
--- Returns the EmitOnFinish folder or nil
-function effects.prepareEmitOnFinish(obj: Instance, scope: types.scope): Folder?
-  local emitOnFinish = obj:FindFirstChild("EmitOnFinish")
+function effects.prepareEmitFolder(obj: Instance, folderName: string, scope: types.scope): Folder?
+  local folder = obj:FindFirstChild(folderName)
 
-  if emitOnFinish and emitOnFinish:IsA("Folder") then
-    emitOnFinish.Parent = nil
-    table.insert(scope, emitOnFinish)
-    return emitOnFinish
+  if folder and folder:IsA("Folder") then
+    folder.Parent = nil
+    table.insert(scope, folder)
+    return folder
   end
 
   return nil
 end
 
--- Helper function to emit nested effects during the effect
--- Call this to emit effects that are children of the cloned part
--- Returns an env with Finished promise that resolves when all nested effects finish
+function effects.prepareEmitOnFinish(obj: Instance, scope: types.scope): Folder?
+  return effects.prepareEmitFolder(obj, "EmitOnFinish", scope)
+end
+
 function effects.emitNested(part: Instance, depth: number): types.EmitEnv
   if not api_ref or not api_ref.setup then
     return { Finished = Promise.resolve() }
@@ -213,16 +209,12 @@ function effects.emitNested(part: Instance, depth: number): types.EmitEnv
   return effects.emit(depth, table.unpack(children))
 end
 
--- Helper function to emit EmitOnFinish effects at the end of an effect
--- Call this when the effect finishes to emit the EmitOnFinish children
--- The children will be parented to the targetParent before emitting
--- Returns an env with Finished promise that resolves when all EmitOnFinish effects finish
-function effects.emitOnFinish(emitOnFinish: Folder?, targetParent: Instance, depth: number): types.EmitEnv
-  if not emitOnFinish then
+function effects.emitFromFolder(folder: Folder?, targetParent: Instance, depth: number): types.EmitEnv
+  if not folder then
     return { Finished = Promise.resolve() }
   end
 
-  local children = emitOnFinish:GetChildren()
+  local children = folder:GetChildren()
 
   if #children == 0 then
     return { Finished = Promise.resolve() }
@@ -233,6 +225,10 @@ function effects.emitOnFinish(emitOnFinish: Folder?, targetParent: Instance, dep
   end
 
   return effects.emit(depth, table.unpack(children))
+end
+
+function effects.emitOnFinish(emitOnFinish: Folder?, targetParent: Instance, depth: number): types.EmitEnv
+  return effects.emitFromFolder(emitOnFinish, targetParent, depth)
 end
 
 return effects
