@@ -16,6 +16,8 @@ function spin.emit(ref: Model, scope: types.scope)
   local scaleEnd = attr.get(ref, "Scale_End", 1)
 
   local emitDelay = attr.get(ref, "EmitDelay", 0)
+  local resetDelay = attr.get(ref, "ResetDelay", 0)
+  local resetOnFinish = attr.get(ref, "ResetOnFinish", true)
 
   local sync = attr.get(ref, "SyncPosition", false)
   local duration = attr.get(ref, "SpinDuration", 0.5)
@@ -61,14 +63,16 @@ function spin.emit(ref: Model, scope: types.scope)
 
   local parent = ref:FindFirstAncestorOfClass("Attachment") or ref:FindFirstAncestorWhichIsA("BasePart")
 
-  table.insert(scope, function()
-    ref:PivotTo(parent and utility.getTransformedOriginExtents(parent) or originalPivot)
-    ref:ScaleTo(originalScale)
-  end)
+  if resetOnFinish then
+    table.insert(scope, function()
+      ref:PivotTo(parent and utility.getTransformedOriginExtents(parent) or originalPivot)
+      ref:ScaleTo(originalScale)
+    end)
+  end
 
   rotation *= duration
 
-  tween.timer(duration, function(deltaTime, elapsed)
+  tween.timer(duration + resetDelay, function(deltaTime, elapsed)
     local alpha = math.clamp(elapsed / duration, 0, 1)
 
     local r = rotation * alpha
