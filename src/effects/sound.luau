@@ -64,8 +64,8 @@ end
 local function createSoundClone(ref: Sound, sourceSound: Sound, scope: types.scope): (Sound, Part?)
   local clone = sourceSound:Clone()
 
-  for _, tag in CollectionService:GetTags(clone) do
-    CollectionService:RemoveTag(clone, tag)
+  for _, tag in clone:GetTags() do
+    clone:RemoveTag(tag)
   end
 
   local parent = ref:FindFirstAncestorWhichIsA("BasePart")
@@ -111,7 +111,8 @@ local function playSingleSound(
   src: Sound,
   clone: Sound,
   partClone: Part?,
-  scope: types.scope
+  scope: types.scope,
+  emitDuration: number
 ): RBXScriptConnection?
   local currentSpeed = clone.PlaybackSpeed
 
@@ -179,7 +180,11 @@ local function playSingleSound(
     )
   end
 
-  clone:Play()
+  if clone.PlayOnRemove then
+    clone:Destroy()
+  else
+    clone:Play()
+  end
 
   if partClone then
     local parent = ref:FindFirstAncestorWhichIsA("BasePart")
@@ -194,6 +199,17 @@ local function playSingleSound(
         end)
       )
     end
+  end
+
+  if emitDuration > 0 then
+    task.wait(emitDuration)
+    clone:Stop()
+  else
+    tween.timer(clone.TimeLength, function(deltaTime, elapsed)
+      return if clone.PlaybackSpeed > 0 or (elapsed > 0 and speedTween and speedTween.Connected)
+        then deltaTime * clone.PlaybackSpeed
+        else nil
+    end, speedTween, scope)
   end
 
   return speedTween
@@ -243,8 +259,6 @@ function sound.emit(ref: Sound, scope: types.scope)
 
   local inheritPoolAttributes = attr.get(ref, "SoundPoolInheritAttributes", false)
 
-  local useDuration = emitDuration > 0
-
   task.wait(emitDelay)
 
   local promises = {}
@@ -259,19 +273,12 @@ function sound.emit(ref: Sound, scope: types.scope)
     local src = if inheritPoolAttributes and sourceSound ~= ref then sourceSound else ref
 
     for r = 1, repeatCount do
-      local clone, partClone = createSoundClone(ref, sourceSound, scope)
-
       table.insert(
         promises,
         Promise.new(function(resolve)
-          playSingleSound(ref, src, clone, partClone, scope)
+          local clone, partClone = createSoundClone(ref, sourceSound, scope)
 
-          if useDuration then
-            task.wait(emitDuration)
-            clone:Stop()
-          else
-            clone.Stopped:Wait()
-          end
+          playSingleSound(ref, src, clone, partClone, scope, emitDuration)
 
           if partClone then
             partClone:Destroy()
