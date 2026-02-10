@@ -194,11 +194,8 @@ function lerp.ColorSequence(a: ColorSequence, b: ColorSequence, t: number)
 
   for _, bp in ipairs(b.Keypoints) do
     local aValueAtBTime = getColorAtTime(a, bp.Time)
-
     -- use linear space because color sequences are in linear space anyway
-    -- and from my observations, using Oklab results in darker transitions
-    -- that do look more natural, but don't create a satisfying result
-    local finalColor = aValueAtBTime:Lerp(bp.Value, t)
+    local finalColor = Oklab.toSRGB(Oklab.fromSRGB(aValueAtBTime:Lerp(bp.Value, t)))
 
     table.insert(newKeypoints, ColorSequenceKeypoint.new(bp.Time, finalColor))
   end
