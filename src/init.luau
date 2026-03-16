@@ -72,7 +72,7 @@ Copyright (c) 2025 zilibobi
     of the Module and any Derivative Works.
 
 7. Versioning.
-    This license applies to Version 1.0 of the VFX-DL. Future versions may be published
+    This license applies to Version 1.1 of the VFX-DL. Future versions may be published
     by the copyright holder.
 
 8. Commercial use.
