@@ -17,7 +17,7 @@ The emit module is licensed under a custom source-available copyleft license whi
 #### Wally (Luau)
 
 ```sh
-ForgeVFX = "zilibobi/forge-vfx@2.2.2"
+ForgeVFX = "zilibobi/forge-vfx@2.2.3"
 ```
 
 #### npm (TypeScript)
