@@ -704,4 +704,27 @@ utility.linear_bezier = buffer.tostring(utility.serializePath({
   Path2DControlPoint.new(UDim2.fromScale(1, 0)),
 }))
 
+function utility.scaleAttribute(obj: Instance, factor: number, name: string)
+  local value = obj:GetAttribute(name)
+
+  if value ~= nil then
+    if typeof(value) == "number" or typeof(value) == "Vector3" then
+      obj:SetAttribute(name, value * factor)
+    elseif typeof(value) == "NumberRange" then
+      obj:SetAttribute(name, NumberRange.new(value.Min * factor, value.Max * factor))
+    end
+  end
+end
+
+function utility.scaleAttachmentDistance(a0: Attachment?, a1: Attachment?, factor: number)
+  if not a0 or not a1 then
+    return
+  end
+
+  local midpoint = (a0.Position + a1.Position) / 2
+
+  a0.Position = midpoint + (a0.Position - midpoint) * factor
+  a1.Position = midpoint + (a1.Position - midpoint) * factor
+end
+
 return utility

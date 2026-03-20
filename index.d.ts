@@ -47,20 +47,51 @@ export function emitWithDepth(
 ): EmitResult;
 
 /**
- * Enable a VFX instance.
+ * Enable a VFX instance and all its descendants.
  * For ParticleEmitters and Beams, sets the Enabled property directly.
  * For other instances, sets the "Enabled" attribute.
- * @param obj The instance to enable
+ * @param obj The instance to enable (propagates to descendants)
  */
 export function enable(obj: Instance): void;
 
 /**
- * Disable a VFX instance.
+ * Disable a VFX instance and all its descendants.
  * For ParticleEmitters and Beams, sets the Enabled property directly.
  * For other instances, sets the "Enabled" attribute.
- * @param obj The instance to disable
+ * @param obj The instance to disable (propagates to descendants)
  */
 export function disable(obj: Instance): void;
+
+/**
+ * Scale the timing of VFX instances by a factor.
+ * Adjusts speeds, lifetimes, durations, and rates across all effect types.
+ * @param factor The time scale factor (>1 speeds up, <1 slows down)
+ * @param instances One or more instances to retime (includes descendants)
+ */
+export function retime(factor: number, ...instances: Instance[]): void;
+
+/**
+ * Scale the size of VFX instances by a factor.
+ * Adjusts particle sizes, beam widths, attachment distances, and more.
+ * @param factor The size scale factor
+ * @param instances One or more instances to resize (includes descendants)
+ */
+export function resize(factor: number, ...instances: Instance[]): void;
+
+/**
+ * Recolor VFX instances.
+ * In "replace" mode, sets all colors to the given color (preserving HDR factor).
+ * In "multiply" mode, blends the color with existing colors via HSV multiplication.
+ * Skips BasePart descendants (only applies to directly passed BaseParts).
+ * @param color The target color
+ * @param mode "replace" to set colors directly, "multiply" to blend with existing
+ * @param instances One or more instances to recolor (includes descendants)
+ */
+export function recolor(
+  color: Color3,
+  mode: "replace" | "multiply",
+  ...instances: Instance[]
+): void;
 
 /**
  * Cache attributes for a VFX instance and its descendants.

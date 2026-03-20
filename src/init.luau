@@ -226,32 +226,6 @@ function api.emitWithDepth(depth: number, ...: Instance)
   return fullEmit(1, depth, ...)
 end
 
-function api.enable(obj: Instance)
-  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
-    obj.Enabled = true
-    return
-  end
-
-  if attributes.isCached(obj) then
-    attributes.trigger(obj, "Enabled", true)
-  else
-    obj:SetAttribute("Enabled", true)
-  end
-end
-
-function api.disable(obj: Instance)
-  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
-    obj.Enabled = false
-    return
-  end
-
-  if attributes.isCached(obj) then
-    attributes.trigger(obj, "Enabled", false)
-  else
-    obj:SetAttribute("Enabled", false)
-  end
-end
-
 function api.cacheAttributes(obj: Instance)
   if utility.SERVER_CONTEXT then
     logger.error("attributes can only be cached in a client-side context")
@@ -275,5 +249,38 @@ function api.restoreAttributes(obj: Instance)
     attributes.restore(v)
   end
 end
+
+local function setEnabled(obj: Instance, enabled: boolean)
+  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
+    obj.Enabled = enabled
+    return
+  end
+
+  if attributes.isCached(obj) then
+    attributes.trigger(obj, "Enabled", enabled)
+  else
+    obj:SetAttribute("Enabled", enabled)
+  end
+end
+
+function api.enable(obj: Instance)
+  setEnabled(obj, true)
+
+  for _, v in obj:GetDescendants() do
+    setEnabled(v, true)
+  end
+end
+
+function api.disable(obj: Instance)
+  setEnabled(obj, false)
+
+  for _, v in obj:GetDescendants() do
+    setEnabled(v, false)
+  end
+end
+
+api.retime = require("@mod/retime").batch
+api.resize = require("@mod/resize").batch
+api.recolor = require("@mod/recolor")
 
 return api
