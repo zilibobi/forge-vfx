@@ -17,13 +17,13 @@ The emit module is licensed under a custom source-available copyleft license whi
 #### Wally (Luau)
 
 ```sh
-ForgeVFX = "zilibobi/forge-vfx@2.2.3"
+ForgeVFX = "zilibobi/forge-vfx@2.3.0"
 ```
 
 #### npm (TypeScript)
 
 ```sh
-npm i @zilibobi/forge-vfx@latest
+npm i @zilibobi/forge-vfx
 ```
 
 #### Manual

@@ -1,6 +1,6 @@
 {
   "name": "@zilibobi/forge-vfx",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "The official emit module from the VFX Forge plugin used to emit visual effects in-game.",
   "main": "out/init.luau",
   "types": "out/index.d.ts",
