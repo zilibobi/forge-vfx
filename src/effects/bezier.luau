@@ -66,6 +66,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
   if useDuration and not mustEmit then
     attr.trigger(ref, "Enabled", true)
 
+    utility.onCancel(scope, function()
+      attr.trigger(ref, "Enabled", false)
+      attr.clearState(ref)
+    end)
+
     if common.speedStart ~= common.speedEnd then
       attr.setState(ref, "SpeedTweening", true)
 
@@ -184,7 +189,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
         end
 
         local emitOnFinish = scope.effects.prepareEmitOnFinish(obj, scope)
-        local env = scope.effects.emitNested(obj, scope.depth + 1)
+        local env = scope.effects.emitNested(obj, scope.depth + 1, scope)
 
         table.insert(promises, env.Finished)
 
@@ -231,7 +236,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
           finished = true
 
-          local finishEnv = scope.effects.emitOnFinish(emitOnFinish, obj, scope.depth + 1)
+          local finishEnv = scope.effects.emitOnFinish(emitOnFinish, obj, scope.depth + 1, scope)
           finishEnv.Finished:finally(function()
             resolve()
           end)

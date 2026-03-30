@@ -232,11 +232,28 @@ function utility.getTarget(obj: Instance): Instance?
   return parent
 end
 
-function utility.createEmitPromise(effects: any, instance: Instance, effectDepth: number, emitFunc: any)
-  return Promise.new(function(resolve)
+function utility.createEmitPromise(
+  effects: any,
+  instance: Instance,
+  effectDepth: number,
+  emitFunc: any,
+  context: { _promises: { any } }?
+)
+  local promise = Promise.new(function(resolve, _, onCancel)
     local scope = {}
     scope.depth = effectDepth
     scope.effects = effects
+    scope._context = context
+
+    onCancel(function()
+      if scope._onCancel then
+        for _, cb in scope._onCancel do
+          cb()
+        end
+      end
+
+      utility.cleanupScope(scope)
+    end)
 
     emitFunc(scope)
 
@@ -244,12 +261,26 @@ function utility.createEmitPromise(effects: any, instance: Instance, effectDepth
 
     resolve()
   end)
+
+  if context then
+    table.insert(context._promises, promise)
+  end
+
+  return promise
+end
+
+function utility.onCancel(scope: { any }, callback: () -> ())
+  if not scope._onCancel then
+    scope._onCancel = {}
+  end
+
+  table.insert(scope._onCancel, callback)
 end
 
 function utility.cleanupScope(scope: { unknown })
   for k, v in scope do
     -- Skip scope metadata fields
-    if k == "depth" or k == "effects" then
+    if k == "depth" or k == "effects" or k == "_context" or k == "_onCancel" then
       continue
     end
 
@@ -268,9 +299,9 @@ function utility.cleanupScope(scope: { unknown })
     elseif t == "table" then
       utility.cleanupScope(v)
     end
-  end
 
-  table.clear(scope)
+    scope[k] = nil
+  end
 end
 
 function utility.protectParent(scope: { unknown }, parent: Instance)

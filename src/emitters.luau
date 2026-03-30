@@ -303,7 +303,7 @@ function emitters.dispatch(
     elseif obj:HasTag(utility.ATTRIBUTE_TWEENER_TAG) then
       emitters.attribute_tweener(obj, scope)
     elseif obj:HasTag(utility.PROPERTY_RANDOMIZER_TAG) or obj:HasTag(utility.ATTRIBUTE_RANDOMIZER_TAG) then
-      -- skip randomizer effects because they have already been emitted
+    -- skip randomizer effects because they have already been emitted
     else
       -- fall back to property tweens for backwards compatibility
       emitters.property_tweener(obj, scope)

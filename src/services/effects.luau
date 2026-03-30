@@ -36,6 +36,13 @@ local effects = {}
 
 local api_ref: types.Api?
 
+local NOOP = function() end
+
+local EMPTY_ENV: types.EmitEnv = {
+  Finished = Promise.resolve(),
+  Clear = NOOP,
+}
+
 function effects.init(api: types.Api)
   api_ref = api
 end
@@ -44,10 +51,10 @@ function effects.deinit()
   api_ref = nil
 end
 
-function effects.emit(depth: number, ...: Instance): types.EmitEnv
+local function emitWithContext(depth: number, context: { _promises: { any } }?, ...: Instance): types.EmitEnv
   if not api_ref or not api_ref.setup then
     logger.error("effects service not initialized")
-    return { Finished = Promise.resolve() }
+    return EMPTY_ENV
   end
 
   local sharedUncMap: { [Instance]: number } = {}
@@ -104,7 +111,7 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
           promises,
           utility.createEmitPromise(effects, desc, depthCache[desc.Parent], function(scope)
             emitters.dispatch(desc, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
-          end)
+          end, context)
         )
       end
     end
@@ -134,6 +141,7 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
       local scope = {}
       scope.depth = depth
       scope.effects = effects
+      scope._context = context
 
       local await = emitters.screen(obj, scope)
 
@@ -159,7 +167,7 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
         rootPromises,
         utility.createEmitPromise(effects, obj, depth, function(scope)
           emitters.dispatch(obj, scope, sharedUncMap, sharedRefMap, api_ref.caches.shared_part, legacyScale)
-        end)
+        end, context)
       )
 
       if not utility.shouldSkipNested(obj) then
@@ -172,11 +180,24 @@ function effects.emit(depth: number, ...: Instance): types.EmitEnv
     end
   end
 
-  local env = {
-    Finished = Promise.all(rootPromises),
-  }
+  local env = {} :: types.EmitEnv
+
+  env.Finished = Promise.all(rootPromises)
+  env.Clear = if context
+    then function()
+      for _, promise in context._promises do
+        promise:cancel()
+      end
+      env.Finished:cancel()
+    end
+    else NOOP
 
   return env
+end
+
+function effects.emit(depth: number, ...: Instance): types.EmitEnv
+  local context = { _promises = {} }
+  return emitWithContext(depth, context, ...)
 end
 
 function effects.prepareEmitFolder(obj: Instance, folderName: string, scope: types.scope): Folder?
@@ -195,40 +216,52 @@ function effects.prepareEmitOnFinish(obj: Instance, scope: types.scope): Folder?
   return effects.prepareEmitFolder(obj, "EmitOnFinish", scope)
 end
 
-function effects.emitNested(part: Instance, depth: number): types.EmitEnv
+function effects.emitNested(part: Instance, depth: number, parentScope: types.scope?): types.EmitEnv
   if not api_ref or not api_ref.setup then
-    return { Finished = Promise.resolve() }
+    return EMPTY_ENV
   end
 
   local children = part:GetChildren()
 
   if #children == 0 then
-    return { Finished = Promise.resolve() }
+    return EMPTY_ENV
   end
 
-  return effects.emit(depth, table.unpack(children))
+  local context = if parentScope then parentScope._context else nil
+  return emitWithContext(depth, context, table.unpack(children))
 end
 
-function effects.emitFromFolder(folder: Folder?, targetParent: Instance, depth: number): types.EmitEnv
+function effects.emitFromFolder(
+  folder: Folder?,
+  targetParent: Instance,
+  depth: number,
+  parentScope: types.scope?
+): types.EmitEnv
   if not folder then
-    return { Finished = Promise.resolve() }
+    return EMPTY_ENV
   end
 
   local children = folder:GetChildren()
 
   if #children == 0 then
-    return { Finished = Promise.resolve() }
+    return EMPTY_ENV
   end
 
   for _, child in children do
     child.Parent = targetParent
   end
 
-  return effects.emit(depth, table.unpack(children))
+  local context = if parentScope then parentScope._context else nil
+  return emitWithContext(depth, context, table.unpack(children))
 end
 
-function effects.emitOnFinish(emitOnFinish: Folder?, targetParent: Instance, depth: number): types.EmitEnv
-  return effects.emitFromFolder(emitOnFinish, targetParent, depth)
+function effects.emitOnFinish(
+  emitOnFinish: Folder?,
+  targetParent: Instance,
+  depth: number,
+  parentScope: types.scope?
+): types.EmitEnv
+  return effects.emitFromFolder(emitOnFinish, targetParent, depth, parentScope)
 end
 
 return effects

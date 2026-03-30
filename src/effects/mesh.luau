@@ -121,6 +121,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   if useEmitDuration and not mustEmit then
     attr.trigger(ref, "Enabled", true)
 
+    utility.onCancel(scope, function()
+      attr.trigger(ref, "Enabled", false)
+      attr.clearState(ref)
+    end)
+
     if speedStart ~= speedEnd then
       attr.setState(ref, "SpeedTweening", true)
 
@@ -202,7 +207,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   local emitOnFinish = scope.effects.prepareEmitOnFinish(obj, scope)
 
-  local env = scope.effects.emitNested(obj, scope.depth + 1)
+  local env = scope.effects.emitNested(obj, scope.depth + 1, scope)
   table.insert(promises, env.Finished)
 
   local speedTween
@@ -459,7 +464,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   Promise.all(promises):await()
 
-  local env = scope.effects.emitOnFinish(emitOnFinish, realObj, scope.depth + 1)
+  local env = scope.effects.emitOnFinish(emitOnFinish, realObj, scope.depth + 1, scope)
   env.Finished:await()
 end
 

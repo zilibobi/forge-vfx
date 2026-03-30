@@ -47,6 +47,14 @@ function particle.emit(ref: ParticleEmitter, obj: ParticleEmitter, scope: types.
     obj.TimeScale = timeScaleStart
   end
 
+  utility.onCancel(scope, function()
+    if useDuration then
+      obj.Enabled = false
+    end
+
+    obj:Clear()
+  end)
+
   obj:Emit(count)
 
   if useDuration then

@@ -8,6 +8,7 @@ export type scope = { any } & {
 
 export type EmitEnv = {
   Finished: typeof(Promise.resolve()),
+  Clear: (self: EmitEnv) -> (),
 }
 
 export type ApiCaches = {
@@ -19,9 +20,9 @@ export type EffectsService = {
   deinit: () -> (),
 
   emit: (depth: number, ...Instance) -> EmitEnv,
-  emitNested: (part: Instance, depth: number) -> EmitEnv,
-  emitFromFolder: (folder: Folder?, targetParent: Instance, depth: number) -> EmitEnv,
-  emitOnFinish: (emitOnFinish: Folder?, targetParent: Instance, depth: number) -> EmitEnv,
+  emitNested: (part: Instance, depth: number, parentScope: scope?) -> EmitEnv,
+  emitFromFolder: (folder: Folder?, targetParent: Instance, depth: number, parentScope: scope?) -> EmitEnv,
+  emitOnFinish: (emitOnFinish: Folder?, targetParent: Instance, depth: number, parentScope: scope?) -> EmitEnv,
 
   prepareEmitFolder: (obj: Instance, folderName: string, scope: scope) -> Folder?,
   prepareEmitOnFinish: (obj: Instance, scope: scope) -> Folder?,

@@ -67,6 +67,16 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
 
       if enabled then
         local last = 0
+        local activeScopes = {}
+        local emitContext = { _promises = {} }
+
+        table.insert(tempScope, activeScopes)
+
+        table.insert(tempScope, function()
+          for _, promise in emitContext._promises do
+            promise:cancel()
+          end
+        end)
 
         table.insert(
           tempScope,
@@ -87,8 +97,16 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
             local emitScope = {}
             emitScope.depth = 0
             emitScope.effects = effects_service
+            emitScope._context = emitContext
+
+            table.insert(activeScopes, emitScope)
 
             effectConfig.emit(obj, emitScope, shared_part_cache)
+
+            local idx = table.find(activeScopes, emitScope)
+            if idx then
+              table.remove(activeScopes, idx)
+            end
 
             utility.cleanupScope(emitScope)
           end)

@@ -306,6 +306,11 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
   if useDuration and not mustEmit then
     attr.trigger(ref, "Enabled", true)
 
+    utility.onCancel(scope, function()
+      attr.trigger(ref, "Enabled", false)
+      attr.clearState(ref)
+    end)
+
     if common.speedStart ~= common.speedEnd then
       attr.setState(ref, "SpeedTweening", true)
 
@@ -544,7 +549,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
         -- emit nested effects
         for _, j in nestedSegments do
           local emitFrom = if attrs.nestedEffectMode == "Head" then 1 else j
-          local env = scope.effects.emitNested(segmentRealParts[emitFrom], scope.depth + 1)
+          local env = scope.effects.emitNested(segmentRealParts[emitFrom], scope.depth + 1, scope)
           table.insert(promises, env.Finished)
         end
 
@@ -947,7 +952,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
           local headAlpha = currentHeadAlpha
 
           local finishEnv = if emitOnFinish
-            then scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1)
+            then scope.effects.emitOnFinish(emitOnFinish, effectContainer, scope.depth + 1, scope)
             else nil
 
           local function onDissipationComplete()

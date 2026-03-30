@@ -170,7 +170,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
         conn:Disconnect()
 
-        local env = scope.effects.emitFromFolder(emitOnImpact, realPart, scope.depth + 1)
+        local env = scope.effects.emitFromFolder(emitOnImpact, realPart, scope.depth + 1, scope)
         table.insert(promises, env.Finished)
       end)
 
@@ -237,7 +237,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
 
     part:ApplyAngularImpulse(part.AssemblyMass * rng:NextUnitVector() * rng:NextNumber(angmag.Min, angmag.Max))
 
-    local env = scope.effects.emitNested(realPart, scope.depth + 1)
+    local env = scope.effects.emitNested(realPart, scope.depth + 1, scope)
     table.insert(promises, env.Finished)
 
     task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
@@ -264,7 +264,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
         )
       end
 
-      local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)
+      local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1, scope)
       table.insert(promises, env.Finished)
     end)
   end

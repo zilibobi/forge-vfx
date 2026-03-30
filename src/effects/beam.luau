@@ -79,7 +79,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
 
   local speedTween
 
-  local env = scope.effects.emitNested(obj, scope.depth + 1)
+  local env = scope.effects.emitNested(obj, scope.depth + 1, scope)
   table.insert(promises, env.Finished)
 
   if texSpeedStart ~= texSpeedEnd then
@@ -302,7 +302,7 @@ function beam.emit(ref: Beam, obj: Beam, scope: types.scope, scale: number)
   end, speedTween, scope)
 
   if emitOnFinish then
-    local env = scope.effects.emitOnFinish(emitOnFinish, obj.Parent or workspace.Terrain, scope.depth + 1)
+    local env = scope.effects.emitOnFinish(emitOnFinish, obj.Parent or workspace.Terrain, scope.depth + 1, scope)
     table.insert(promises, env.Finished)
   end
 

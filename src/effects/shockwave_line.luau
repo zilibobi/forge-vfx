@@ -284,7 +284,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
           part.Size = size * sizeScaleStart
         end
 
-        local env = scope.effects.emitNested(realPart, scope.depth + 1)
+        local env = scope.effects.emitNested(realPart, scope.depth + 1, scope)
         table.insert(promises, env.Finished)
 
         task.delay(rng:NextNumber(lifetime.Min, lifetime.Max), function()
@@ -337,7 +337,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
             )
           end
 
-          local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1)
+          local env = scope.effects.emitOnFinish(emitOnFinish, realPart, scope.depth + 1, scope)
           table.insert(promises, env.Finished)
         end)
       end
