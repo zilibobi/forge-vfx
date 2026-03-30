@@ -138,7 +138,7 @@ local function emitWithContext(depth: number, context: { _promises: { any } }?, 
 
       local lockThread = coroutine.running()
 
-      local scope = {}
+      local scope: { [any]: any } = {}
       scope.depth = depth
       scope.effects = effects
       scope._context = context

@@ -263,7 +263,10 @@ function api.restoreAttributes(obj: Instance, shallow: boolean?)
 end
 
 local function setEnabled(obj: Instance, enabled: boolean)
-  if obj:IsA("ParticleEmitter") or obj:IsA("Beam") then
+  if obj:IsA("ParticleEmitter") then
+    obj.Enabled = enabled
+    return
+  elseif obj:IsA("Beam") then
     obj.Enabled = enabled
     return
   end

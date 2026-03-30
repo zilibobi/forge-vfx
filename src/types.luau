@@ -4,6 +4,8 @@ local ObjectCache = require("@obj/ObjectCache")
 export type scope = { any } & {
   depth: number,
   effects: EffectsService,
+  _context: { _promises: { any } }?,
+  _onCancel: { () -> () }?,
 }
 
 export type EmitEnv = {

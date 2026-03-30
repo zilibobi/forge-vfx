@@ -240,7 +240,7 @@ function utility.createEmitPromise(
   context: { _promises: { any } }?
 )
   local promise = Promise.new(function(resolve, _, onCancel)
-    local scope = {}
+    local scope: { [any]: any } = {}
     scope.depth = effectDepth
     scope.effects = effects
     scope._context = context
@@ -269,7 +269,7 @@ function utility.createEmitPromise(
   return promise
 end
 
-function utility.onCancel(scope: { any }, callback: () -> ())
+function utility.onCancel(scope: { [any]: any }, callback: () -> ())
   if not scope._onCancel then
     scope._onCancel = {}
   end
@@ -285,7 +285,7 @@ local ENABLED_CANCEL_TOKENS: { [Instance]: { _promises: { any }, _scopes: { { un
 local FORCE_EMIT_SET: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 
 function utility.forceEmit(obj: Instance, value: boolean)
-  FORCE_EMIT_SET[obj] = value or nil
+  FORCE_EMIT_SET[obj] = if value then true else nil :: any
 end
 
 function utility.isForceEmitting(obj: Instance): boolean
@@ -293,7 +293,7 @@ function utility.isForceEmitting(obj: Instance): boolean
 end
 
 function utility.setEnabledCancelToken(obj: Instance, token: { _promises: { any }, _scopes: { { unknown } } }?)
-  ENABLED_CANCEL_TOKENS[obj] = token
+  ENABLED_CANCEL_TOKENS[obj] = token :: any
 end
 
 function utility.cancelEnabledEmissions(obj: Instance)
@@ -315,7 +315,7 @@ function utility.cancelEnabledEmissions(obj: Instance)
   table.clear(token._scopes)
 end
 
-function utility.cleanupScope(scope: { unknown })
+function utility.cleanupScope(scope: { [any]: any })
   local depth = scope.depth
   local effects = scope.effects
 
@@ -354,7 +354,7 @@ function utility.cleanupScope(scope: { unknown })
   scope._onCancel = onCancelCbs
 end
 
-function utility.protectParent(scope: { unknown }, parent: Instance)
+function utility.protectParent(scope: { [any]: any }, parent: Instance)
   table.insert(
     scope,
     parent.AncestryChanged:Connect(function(_, new)
@@ -793,7 +793,9 @@ function utility.scaleAttribute(obj: Instance, factor: number, name: string)
   local value = attr.get(obj, name, nil)
 
   if value ~= nil then
-    if typeof(value) == "number" or typeof(value) == "Vector3" then
+    if typeof(value) == "number" then
+      attr.set(obj, name, value * factor)
+    elseif typeof(value) == "Vector3" then
       attr.set(obj, name, value * factor)
     elseif typeof(value) == "NumberRange" then
       attr.set(obj, name, NumberRange.new(value.Min * factor, value.Max * factor))
