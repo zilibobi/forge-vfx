@@ -32,6 +32,13 @@ local LastRefId = 0
 local attr = {}
 
 function attr.cache(obj: Instance)
+  local prevId = obj:GetAttribute(ATTR_CACHE_ID)
+
+  if prevId then
+    logger.warn(`{obj} is already cached (id={prevId})`)
+    return
+  end
+
   local attributes = obj:GetAttributes()
 
   if next(attributes) == nil then
@@ -63,7 +70,8 @@ function attr.restore(obj: Instance)
   local cache = Cache[id]
 
   if not cache then
-    logger.error(`{obj} with cache id '{id}' doesn't have any cached attributes`)
+    logger.warn(`{obj} with cache id '{id}' doesn't have any cached attributes`)
+    return
   end
 
   for k, v in cache do
