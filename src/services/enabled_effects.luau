@@ -81,6 +81,8 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
       end
 
       if enabled then
+        utility.cleanupScope(tempScope)
+
         local last = 0
         local cancelToken = { _promises = {}, _scopes = {} }
 
@@ -120,7 +122,6 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
           end)
         )
       else
-        utility.setEnabledCancelToken(obj, nil)
         utility.cleanupScope(tempScope)
       end
     end

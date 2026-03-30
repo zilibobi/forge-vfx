@@ -123,12 +123,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     attr.trigger(ref, "Enabled", true)
 
     utility.onCancel(scope, function()
-      utility.cancelEnabledEmissions(ref)
+      local token = utility.stopEmitDuration(ref)
 
-      attr.trigger(ref, "Enabled", false)
-      attr.clearState(ref)
-
-      utility.forceEmit(ref, false)
+      if token then
+        utility.cancelToken(token)
+      end
     end)
 
     if speedStart ~= speedEnd then
@@ -153,10 +152,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
     task.wait(emitDuration)
 
-    attr.trigger(ref, "Enabled", false)
-    attr.clearState(ref)
-
-    utility.forceEmit(ref, false)
+    utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
     return
   end

@@ -190,24 +190,31 @@ function emitters.mesh(
   end
 
   local tasks = {}
+  local context = (scope :: any)._context
 
-  for i = 1, attr.get(obj, "EmitCount", 1) do
-    table.insert(
-      tasks,
-      Promise.new(function(resolve)
-        utility.try(
-          `failed to emit mesh with error: %s`,
-          Mesh.emit,
-          obj,
-          utility.assembleMeshVFX(start, scope, shared_part_cache),
-          scope,
-          legacyScale,
-          skipEnabledCheck
-        )
+  local useEmitDuration = obj:HasTag(utility.ENABLED_VFX_TAG) and attr.get(obj, "EmitDuration", 0) > 0
+  local emitCount = if useEmitDuration and not skipEnabledCheck then 1 else attr.get(obj, "EmitCount", 1)
 
-        resolve()
-      end)
-    )
+  for i = 1, emitCount do
+    local promise = Promise.new(function(resolve)
+      utility.try(
+        `failed to emit mesh with error: %s`,
+        Mesh.emit,
+        obj,
+        utility.assembleMeshVFX(start, scope, shared_part_cache),
+        scope,
+        legacyScale,
+        skipEnabledCheck
+      )
+
+      resolve()
+    end)
+
+    table.insert(tasks, promise)
+
+    if context then
+      table.insert(context._promises, promise)
+    end
   end
 
   Promise.all(tasks):await()

@@ -68,12 +68,11 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
     attr.trigger(ref, "Enabled", true)
 
     utility.onCancel(scope, function()
-      utility.cancelEnabledEmissions(ref)
+      local token = utility.stopEmitDuration(ref)
 
-      attr.trigger(ref, "Enabled", false)
-      attr.clearState(ref)
-
-      utility.forceEmit(ref, false)
+      if token then
+        utility.cancelToken(token)
+      end
     end)
 
     if common.speedStart ~= common.speedEnd then
@@ -98,10 +97,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
     task.wait(common.emitDuration)
 
-    attr.trigger(ref, "Enabled", false)
-    attr.clearState(ref)
-
-    utility.forceEmit(ref, false)
+    utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
     return
   end

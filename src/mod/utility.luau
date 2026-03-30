@@ -296,26 +296,50 @@ function utility.setEnabledCancelToken(obj: Instance, token: { _promises: { any 
   ENABLED_CANCEL_TOKENS[obj] = token :: any
 end
 
-function utility.cancelEnabledEmissions(obj: Instance)
-  local token = ENABLED_CANCEL_TOKENS[obj]
+function utility.getEnabledCancelToken(obj: Instance)
+  return ENABLED_CANCEL_TOKENS[obj]
+end
 
-  if not token then
-    return
-  end
-
+function utility.cancelToken(token: { _promises: { any }, _scopes: { { unknown } } })
   for _, promise in token._promises do
     promise:cancel()
   end
 
   for _, scope in token._scopes do
-    utility.cleanupScope(scope)
+    utility.cleanupScope(scope, true)
   end
 
   table.clear(token._promises)
   table.clear(token._scopes)
 end
 
-function utility.cleanupScope(scope: { [any]: any })
+function utility.stopEmitDuration(ref: Instance)
+  local token = utility.getEnabledCancelToken(ref)
+
+  attr.trigger(ref, "Enabled", false)
+  attr.clearState(ref)
+  utility.forceEmit(ref, false)
+
+  return token
+end
+
+function utility.awaitEmitDuration(token: { _promises: { any } }?)
+  if not token then
+    return
+  end
+
+  local pending = {}
+
+  for _, promise in token._promises do
+    table.insert(pending, promise)
+  end
+
+  if #pending > 0 then
+    Promise.all(pending):await()
+  end
+end
+
+function utility.cleanupScope(scope: { [any]: any }, syncFunctions: boolean?)
   local depth = scope.depth
   local effects = scope.effects
 
@@ -339,7 +363,11 @@ function utility.cleanupScope(scope: { [any]: any })
         task.cancel(v)
       end
     elseif t == "function" then
-      task.spawn(v)
+      if syncFunctions then
+        v()
+      else
+        task.spawn(v)
+      end
     elseif t == "table" then
       utility.cleanupScope(v)
     end
