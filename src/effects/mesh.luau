@@ -23,7 +23,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     or not goal
     or not start:IsA("BasePart")
     or not goal:IsA("BasePart")
-    or (ref:GetAttribute("Enabled") and not mustEmit)
+    or (attr.get(ref, "Enabled", false) and not mustEmit)
   then
     return
   end
@@ -71,7 +71,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     end
   end
 
-  local useEmitDuration = ref:GetAttribute("Enabled") ~= nil and ref:HasTag(utility.ENABLED_VFX_TAG) and duration > 0
+  local useEmitDuration = ref:HasTag(utility.ENABLED_VFX_TAG) and emitDuration > 0
 
   local legacy_decalST = attr.get(ref, "Decal_StartTransparency", 0, true)
   local legacy_decalET = attr.get(ref, "Decal_EndTransparency", 1, true)
@@ -119,6 +119,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   task.wait(emitDelay)
 
   if useEmitDuration and not mustEmit then
+    utility.forceEmit(ref, true)
     attr.trigger(ref, "Enabled", true)
 
     utility.onCancel(scope, function()
@@ -126,6 +127,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
       attr.trigger(ref, "Enabled", false)
       attr.clearState(ref)
+
+      utility.forceEmit(ref, false)
     end)
 
     if speedStart ~= speedEnd then
@@ -152,6 +155,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
     attr.trigger(ref, "Enabled", false)
     attr.clearState(ref)
+
+    utility.forceEmit(ref, false)
 
     return
   end

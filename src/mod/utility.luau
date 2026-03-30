@@ -282,6 +282,16 @@ local ENABLED_CANCEL_TOKENS: { [Instance]: { _promises: { any }, _scopes: { { un
   { __mode = "k" }
 ) :: any
 
+local FORCE_EMIT_SET: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
+
+function utility.forceEmit(obj: Instance, value: boolean)
+  FORCE_EMIT_SET[obj] = value or nil
+end
+
+function utility.isForceEmitting(obj: Instance): boolean
+  return FORCE_EMIT_SET[obj] == true
+end
+
 function utility.setEnabledCancelToken(obj: Instance, token: { _promises: { any }, _scopes: { { unknown } } }?)
   ENABLED_CANCEL_TOKENS[obj] = token
 end

@@ -67,13 +67,17 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
       end)
     end
 
-    if not obj:IsDescendantOf(workspace) and (if obj.Parent then not obj.Parent:HasTag("AllowEmitting") else false) then
-      return
-    end
-
     local function onEnabled(enabled: boolean?)
       if enabled == nil then
         enabled = attr.get(obj, "Enabled", true)
+      end
+
+      local canEmit = utility.isForceEmitting(obj)
+        or obj:IsDescendantOf(workspace)
+        or (obj.Parent and obj.Parent:HasTag("AllowEmitting"))
+
+      if enabled and not canEmit then
+        return
       end
 
       if enabled then
