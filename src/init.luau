@@ -226,7 +226,7 @@ function api.emitWithDepth(depth: number, ...: Instance)
   return fullEmit(1, depth, ...)
 end
 
-function api.cacheAttributes(obj: Instance)
+function api.cacheAttributes(obj: Instance, shallow: boolean)
   if utility.SERVER_CONTEXT then
     logger.error("attributes can only be cached in a client-side context")
   end
@@ -235,14 +235,26 @@ function api.cacheAttributes(obj: Instance)
     logger.error("attributes can only be cached for VFX inside ReplicatedStorage")
   end
 
+  attributes.cache(obj)
+
+  if shallow then
+    return
+  end
+
   for _, v in obj:GetDescendants() do
     attributes.cache(v)
   end
 end
 
-function api.restoreAttributes(obj: Instance)
+function api.restoreAttributes(obj: Instance, shallow: boolean?)
   if utility.SERVER_CONTEXT then
     logger.error("attributes can only be restored in a client-side context")
+  end
+
+  attributes.restore(obj)
+
+  if shallow then
+    return
   end
 
   for _, v in obj:GetDescendants() do
