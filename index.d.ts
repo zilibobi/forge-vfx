@@ -6,6 +6,11 @@ export interface EmitResult {
    * Promise that resolves when the effect has finished playing
    */
   Finished: Promise<void>;
+
+  /**
+   * Clear all emitted effects
+   */
+  Clear(): void;
 }
 
 /**
@@ -94,16 +99,18 @@ export function recolor(
 ): void;
 
 /**
- * Cache attributes for a VFX instance and its descendants.
+ * Cache attributes for a VFX instance and optionally its descendants.
  * Strips attributes from instances and stores them in memory for faster access.
  * Only works on the client and for instances inside ReplicatedStorage.
- * @param obj The instance whose descendant attributes to cache
+ * @param obj The instance whose attributes to cache
+ * @param shallow If true, only cache the instance itself (skip descendants)
  */
-export function cacheAttributes(obj: Instance): void;
+export function cacheAttributes(obj: Instance, shallow: boolean): void;
 
 /**
  * Restore previously cached attributes back onto instances.
  * Only works on the client.
- * @param obj The instance whose descendant attributes to restore
+ * @param obj The instance whose attributes to restore
+ * @param shallow If true, only restore the instance itself (skip descendants)
  */
-export function restoreAttributes(obj: Instance): void;
+export function restoreAttributes(obj: Instance, shallow?: boolean): void;
