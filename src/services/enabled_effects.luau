@@ -10,6 +10,7 @@ local enabled_effects = {}
 
 function enabled_effects.init(scope: types.scope, shared_part_cache: any, effects_service: any)
   local enabledScopes = {}
+  local ancestryConnections: { [Instance]: RBXScriptConnection } = {}
 
   local function removeEnabledEffect(obj: Instance)
     local effectScope = enabledScopes[obj]
@@ -19,6 +20,17 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
     end
 
     enabledScopes[obj] = nil
+  end
+
+  local function removeEnabledEffectFull(obj: Instance)
+    removeEnabledEffect(obj)
+
+    local conn = ancestryConnections[obj]
+
+    if conn then
+      conn:Disconnect()
+      ancestryConnections[obj] = nil
+    end
   end
 
   local function addEnabledEffect(obj: Instance)
@@ -37,15 +49,14 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
     end
 
     local tempScope = {} :: { any }
-    local preEffectScope = {} :: { any }
+    local effectScope = {} :: { any }
 
-    table.insert(preEffectScope, tempScope)
+    table.insert(effectScope, tempScope)
 
-    enabledScopes[obj] = preEffectScope
+    enabledScopes[obj] = effectScope
 
-    table.insert(
-      preEffectScope,
-      obj.AncestryChanged:Connect(function()
+    if not ancestryConnections[obj] then
+      ancestryConnections[obj] = obj.AncestryChanged:Connect(function()
         if obj:IsDescendantOf(workspace) or (obj.Parent and obj.Parent:HasTag("AllowEmitting")) then
           if not enabledScopes[obj] then
             addEnabledEffect(obj)
@@ -54,7 +65,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
           removeEnabledEffect(obj)
         end
       end)
-    )
+    end
 
     if not obj:IsDescendantOf(workspace) and (if obj.Parent then not obj.Parent:HasTag("AllowEmitting") else false) then
       return
@@ -110,7 +121,7 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
       end
     end
 
-    table.insert(preEffectScope, attr.hook(obj, "Enabled", onEnabled))
+    table.insert(effectScope, attr.hook(obj, "Enabled", onEnabled))
 
     onEnabled()
   end
@@ -120,12 +131,18 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
   end
 
   CollectionService:GetInstanceAddedSignal(utility.ENABLED_VFX_TAG):Connect(addEnabledEffect)
-  CollectionService:GetInstanceRemovedSignal(utility.ENABLED_VFX_TAG):Connect(removeEnabledEffect)
+  CollectionService:GetInstanceRemovedSignal(utility.ENABLED_VFX_TAG):Connect(removeEnabledEffectFull)
 
   table.insert(scope, function()
-    for _, effectScope in enabledScopes do
+    for obj, effectScope in enabledScopes do
       utility.cleanupScope(effectScope)
     end
+
+    for obj, conn in ancestryConnections do
+      conn:Disconnect()
+    end
+
+    table.clear(ancestryConnections)
   end)
 end
 
