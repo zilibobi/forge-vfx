@@ -4,6 +4,7 @@ sourcemap.json
 .build
 
 *.rbxm
+*.log
 
 __pycache__
 
