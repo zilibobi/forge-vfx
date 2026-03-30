@@ -268,7 +268,7 @@ function cache.free(self: ObjectCache, key: any)
     item.added = os.clock()
 
     if self.params.on_free then
-      task.spawn(self.params.on_free, item)
+      self.params.on_free(item)
     end
 
     table.insert(self.unused, item)

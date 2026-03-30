@@ -67,6 +67,8 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
     attr.trigger(ref, "Enabled", true)
 
     utility.onCancel(scope, function()
+      utility.cancelEnabledEmissions(ref)
+
       attr.trigger(ref, "Enabled", false)
       attr.clearState(ref)
     end)

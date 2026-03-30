@@ -277,7 +277,41 @@ function utility.onCancel(scope: { any }, callback: () -> ())
   table.insert(scope._onCancel, callback)
 end
 
+local ENABLED_CANCEL_TOKENS: { [Instance]: { _promises: { any }, _scopes: { { unknown } } } } = setmetatable(
+  {},
+  { __mode = "k" }
+) :: any
+
+function utility.setEnabledCancelToken(obj: Instance, token: { _promises: { any }, _scopes: { { unknown } } }?)
+  ENABLED_CANCEL_TOKENS[obj] = token
+end
+
+function utility.cancelEnabledEmissions(obj: Instance)
+  local token = ENABLED_CANCEL_TOKENS[obj]
+
+  if not token then
+    return
+  end
+
+  for _, promise in token._promises do
+    promise:cancel()
+  end
+
+  for _, scope in token._scopes do
+    utility.cleanupScope(scope)
+  end
+
+  table.clear(token._promises)
+  table.clear(token._scopes)
+end
+
 function utility.cleanupScope(scope: { unknown })
+  local depth = scope.depth
+  local effects = scope.effects
+
+  local context = scope._context
+  local onCancelCbs = scope._onCancel
+
   for k, v in scope do
     -- Skip scope metadata fields
     if k == "depth" or k == "effects" or k == "_context" or k == "_onCancel" then
@@ -299,9 +333,15 @@ function utility.cleanupScope(scope: { unknown })
     elseif t == "table" then
       utility.cleanupScope(v)
     end
-
-    scope[k] = nil
   end
+
+  table.clear(scope)
+
+  scope.depth = depth
+  scope.effects = effects
+
+  scope._context = context
+  scope._onCancel = onCancelCbs
 end
 
 function utility.protectParent(scope: { unknown }, parent: Instance)

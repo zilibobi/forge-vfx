@@ -122,6 +122,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     attr.trigger(ref, "Enabled", true)
 
     utility.onCancel(scope, function()
+      utility.cancelEnabledEmissions(ref)
+
       attr.trigger(ref, "Enabled", false)
       attr.clearState(ref)
     end)

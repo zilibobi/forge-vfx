@@ -67,16 +67,9 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
 
       if enabled then
         local last = 0
-        local activeScopes = {}
-        local emitContext = { _promises = {} }
+        local cancelToken = { _promises = {}, _scopes = {} }
 
-        table.insert(tempScope, activeScopes)
-
-        table.insert(tempScope, function()
-          for _, promise in emitContext._promises do
-            promise:cancel()
-          end
-        end)
+        utility.setEnabledCancelToken(obj, cancelToken)
 
         table.insert(
           tempScope,
@@ -97,21 +90,22 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
             local emitScope = {}
             emitScope.depth = 0
             emitScope.effects = effects_service
-            emitScope._context = emitContext
+            emitScope._context = cancelToken
 
-            table.insert(activeScopes, emitScope)
+            table.insert(cancelToken._scopes, emitScope)
 
             effectConfig.emit(obj, emitScope, shared_part_cache)
 
-            local idx = table.find(activeScopes, emitScope)
+            local idx = table.find(cancelToken._scopes, emitScope)
             if idx then
-              table.remove(activeScopes, idx)
+              table.remove(cancelToken._scopes, idx)
             end
 
             utility.cleanupScope(emitScope)
           end)
         )
       else
+        utility.setEnabledCancelToken(obj, nil)
         utility.cleanupScope(tempScope)
       end
     end
