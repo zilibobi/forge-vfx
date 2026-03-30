@@ -441,10 +441,14 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
 
         fromToMap[from] = to
 
-        if not v:GetAttribute("FlipbookEnabled") then
+        if not attr.get(v, "FlipbookEnabled", nil) then
           table.insert(decals, v)
         else
-          flipbooks[v] = utility.deserializeFlipbook(v:GetAttribute("FlipbookTextures"))
+          local data = attr.get(v, "FlipbookTextures", nil)
+
+          if data then
+            flipbooks[v] = utility.deserializeFlipbook(data)
+          end
         end
       end
 
@@ -489,8 +493,8 @@ function utility.getMeshDecals(ref: Model, start: BasePart)
 
           local buf = utility.serializeFlipbook(ids)
 
-          v:SetAttribute("FlipbookEnabled", true)
-          v:SetAttribute("FlipbookTextures", buffer.tostring(buf))
+          attr.set(v, "FlipbookEnabled", true)
+          attr.set(v, "FlipbookTextures", buffer.tostring(buf))
         end
       end
     end
@@ -705,13 +709,13 @@ utility.linear_bezier = buffer.tostring(utility.serializePath({
 }))
 
 function utility.scaleAttribute(obj: Instance, factor: number, name: string)
-  local value = obj:GetAttribute(name)
+  local value = attr.get(obj, name, nil)
 
   if value ~= nil then
     if typeof(value) == "number" or typeof(value) == "Vector3" then
-      obj:SetAttribute(name, value * factor)
+      attr.set(obj, name, value * factor)
     elseif typeof(value) == "NumberRange" then
-      obj:SetAttribute(name, NumberRange.new(value.Min * factor, value.Max * factor))
+      attr.set(obj, name, NumberRange.new(value.Min * factor, value.Max * factor))
     end
   end
 end
