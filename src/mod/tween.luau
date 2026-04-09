@@ -38,7 +38,16 @@ function tween.fromParams(
 
   local cleanupStepper
 
+  -- captured at call time, so the context follows this tween across renders
+  local context = utility.getCurrentContext()
+
   local function step(deltaTime)
+    -- when paused, freeze the tween in place: skip the elapsed update and
+    -- skip the animator entirely so it doesn't write stale property values
+    if context and context._paused then
+      return
+    end
+
     -- roblox tweens apparently don't start from alpha=0
     if not startAtZero and elapsed == 0 then
       elapsed = math.clamp(elapsed + deltaTime, 0, math.max(duration, 0))
@@ -110,7 +119,13 @@ function tween.timer(
 
   local cleanupStepper
 
+  local context = utility.getCurrentContext()
+
   local function step(deltaTime)
+    if context and context._paused then
+      return
+    end
+
     local result = counter(deltaTime, elapsed)
 
     if

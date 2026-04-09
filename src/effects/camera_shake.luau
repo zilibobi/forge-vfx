@@ -139,9 +139,14 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
     table.insert(scope, speedTween)
   end
 
+  local pauseContext = utility.getCurrentContext()
+
   table.insert(
     scope,
     RunService.RenderStepped:Connect(function(deltaTime)
+      if pauseContext and pauseContext._paused then
+        return
+      end
       elapsed += deltaTime * currentSpeed
     end)
   )
@@ -152,7 +157,7 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
     rot = vector.zero,
   }
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   table.insert(activeShakes, obj)
 
@@ -188,7 +193,7 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
   shake:Start()
 
   if sustained then
-    task.wait(emitDuration)
+    utility.pausableWait(emitDuration)
     shake:StopSustain()
   end
 

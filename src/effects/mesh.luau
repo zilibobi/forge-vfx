@@ -116,7 +116,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     rng:NextNumber(minInitRot.z, maxInitRot.z)
   ) * utility.DEG_TO_RAD
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   if useEmitDuration and not mustEmit then
     utility.forceEmit(ref, true)
@@ -150,7 +150,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       )
     end
 
-    task.wait(emitDuration)
+    utility.pausableWait(emitDuration)
 
     utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
@@ -175,7 +175,13 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     0
   )
 
+  local pauseContext = utility.getCurrentContext()
+
   local function updatePos(deltaTime: number)
+    if pauseContext and pauseContext._paused then
+      return
+    end
+
     local o = sync and utility.getTransformedOriginExtents(parent) or origin
     local add = initRot:Sign() * currentRotSpeed * deltaTime
 

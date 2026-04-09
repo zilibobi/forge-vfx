@@ -202,7 +202,7 @@ local function playSingleSound(
   end
 
   if emitDuration > 0 then
-    task.wait(emitDuration)
+    utility.pausableWait(emitDuration)
     clone:Stop()
   else
     tween.timer(clone.TimeLength, function(deltaTime, elapsed)
@@ -264,9 +264,10 @@ function sound.emit(ref: Sound, scope: types.scope)
   local repeatCount = attr.get(ref, "RepeatCount", 1)
   local repeatInterval = attr.getRange(ref, "RepeatInterval", NumberRange.new(0, 0))
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   local promises = {}
+  local context = scope._context
 
   for i = 1, emitCount do
     local sourceSound = inheritPoolAttributes and ref or (not isSource and selectRandomSound(ref) or ref)
@@ -281,7 +282,10 @@ function sound.emit(ref: Sound, scope: types.scope)
       table.insert(
         promises,
         Promise.new(function(resolve)
+          utility.bindContext(context)
+
           local clone, partClone = createSoundClone(ref, sourceSound, scope)
+          utility.registerPausable(scope, "sound", clone)
 
           playSingleSound(ref, src, clone, partClone, scope, emitDuration)
 
@@ -296,12 +300,12 @@ function sound.emit(ref: Sound, scope: types.scope)
       )
 
       if r < repeatCount and repeatInterval.Max > 0 then
-        task.wait(rng:NextNumber(repeatInterval.Min, repeatInterval.Max))
+        utility.pausableWait(rng:NextNumber(repeatInterval.Min, repeatInterval.Max))
       end
     end
 
     if i < emitCount and emitInterval.Max > 0 then
-      task.wait(rng:NextNumber(emitInterval.Min, emitInterval.Max))
+      utility.pausableWait(rng:NextNumber(emitInterval.Min, emitInterval.Max))
     end
   end
 

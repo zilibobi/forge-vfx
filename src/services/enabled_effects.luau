@@ -84,13 +84,29 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
         utility.cleanupScope(tempScope)
 
         local last = 0
-        local cancelToken = { _promises = {}, _scopes = {} }
 
-        utility.setEnabledCancelToken(obj, cancelToken)
+        -- inherit the user's emit context (if any) so that particles spawned
+        -- by this enabled-effect loop are pausable via the same env:Pause()
+        -- call that started them. we use a metatable so _paused and
+        -- _pausableInstances read through to the parent without needing to
+        -- keep them in sync manually. the local _promises/_scopes fields stay
+        -- isolated because stopEmitDuration must only cancel this loop's work.
+        local parentContext = utility.getCurrentContext()
+        local cancelToken = setmetatable(
+          { _promises = {}, _scopes = {} },
+          if parentContext then { __index = parentContext } else nil
+        )
+
+        utility.setEnabledCancelToken(obj, cancelToken :: any)
 
         table.insert(
           tempScope,
           RunService.RenderStepped:Connect(function()
+            -- skip emission while the owning user context is paused.
+            if cancelToken._paused then
+              return
+            end
+
             local rate = attr.get(obj, "Rate", 5)
             local speed = attr.getState(obj, "SpeedOverride", 1)
 
@@ -110,6 +126,12 @@ function enabled_effects.init(scope: types.scope, shared_part_cache: any, effect
             emitScope._context = cancelToken
 
             table.insert(cancelToken._scopes, emitScope)
+
+            -- bind the cancel token to this render tick's coroutine so
+            -- pause-aware tweens/timers created inside effectConfig.emit
+            -- pick it up (and through its metatable, the parent context's
+            -- _paused flag).
+            utility.bindContext(cancelToken)
 
             effectConfig.emit(obj, emitScope, shared_part_cache)
 

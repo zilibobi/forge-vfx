@@ -89,6 +89,187 @@ utility.COPY_EXTENDED_PART_PROPERTIES = {
   "CollisionGroup",
 }
 
+local THREAD_CONTEXT: { [thread]: any } = setmetatable({} :: any, { __mode = "k" }) :: any
+
+function utility.bindContext(context: any)
+  THREAD_CONTEXT[coroutine.running()] = context
+end
+
+function utility.getCurrentContext(): any
+  return THREAD_CONTEXT[coroutine.running()]
+end
+
+function utility.isContextPaused(context: any): boolean
+  return context ~= nil and context._paused == true
+end
+
+-- Pause-aware wait. If the running thread has a bound context that becomes
+-- paused mid-wait, the elapsed time stops accumulating until it's resumed.
+-- Matches `task.wait` semantics for non-pause cases: `pausableWait(0)` still
+-- yields one frame, which the rest of the codebase depends on for timing
+-- between clone-and-parent and subsequent property reads.
+function utility.pausableWait(duration: number)
+  local context = THREAD_CONTEXT[coroutine.running()]
+
+  if not context then
+    task.wait(duration)
+    return
+  end
+
+  -- no explicit duration: yield one frame, same as task.wait()
+  if duration <= 0 then
+    task.wait()
+    return
+  end
+
+  local elapsed = 0
+
+  while elapsed < duration do
+    local dt = task.wait()
+
+    if not context._paused then
+      elapsed += dt
+    end
+  end
+end
+
+function utility.registerPausable(scope: any, kind: string, ref: Instance)
+  local context = scope and scope._context
+
+  -- only contexts that opt into pause support (i.e. those created by
+  -- effects.emit) carry a _pausableInstances list. enabled-effect cycles
+  -- pass cancel tokens that intentionally don't support pausing, so we
+  -- skip them here to avoid leaking entries across infinite cycles.
+  if not context or not context._pausableInstances then
+    return
+  end
+
+  -- capture the "true" property value at registration time, before any
+  -- external code (property tweeners, etc) has a chance to modify it.
+  -- this is the fallback we restore to at resume, in case the value was
+  -- transiently 0 when pause ran.
+  local initialSaved: any = nil
+  if kind == "particle" then
+    initialSaved = (ref :: ParticleEmitter).TimeScale
+  elseif kind == "beam" then
+    initialSaved = { TextureSpeed = (ref :: Beam).TextureSpeed }
+  end
+
+  local entry = {
+    kind = kind,
+    ref = ref,
+    saved = initialSaved,
+  }
+  table.insert(context._pausableInstances, entry)
+
+  -- if the context is already paused, immediately apply pause to this new entry
+  if context._paused then
+    utility.applyPauseEntry(entry)
+  end
+
+  return entry
+end
+
+function utility.applyPauseEntry(entry: any)
+  local ref = entry.ref
+
+  if not ref or not ref.Parent then
+    return
+  end
+
+  if entry.kind == "particle" then
+    local before = (ref :: ParticleEmitter).TimeScale
+    -- only refresh saved if the current TS is a meaningful (non-zero) value.
+    -- if something transiently wrote 0 to TS between registration and pause,
+    -- we'd otherwise lose the original value and be unable to restore.
+    if before ~= 0 then
+      entry.saved = before
+    end
+    (ref :: ParticleEmitter).TimeScale = 0
+  elseif entry.kind == "beam" then
+    local beam = ref :: Beam
+    if beam.TextureSpeed ~= 0 then
+      entry.saved = { TextureSpeed = beam.TextureSpeed }
+    end
+    beam.TextureSpeed = 0
+  elseif entry.kind == "sound" then
+    local snd = ref :: Sound
+    if snd.IsPlaying then
+      entry.saved = true
+      snd:Pause()
+    else
+      entry.saved = false
+    end
+  end
+end
+
+function utility.applyResumeEntry(entry: any)
+  local ref = entry.ref
+
+  if not ref or not ref.Parent then
+    return
+  end
+
+  if entry.kind == "particle" then
+    -- never restore to 0 — that just re-pauses the particle. saved is seeded
+    -- at registration and kept across pause cycles so the fallback is always
+    -- a meaningful value.
+    if typeof(entry.saved) == "number" and entry.saved ~= 0 then
+      (ref :: ParticleEmitter).TimeScale = entry.saved
+    else
+      -- last-ditch: if saved is missing or 0 for any reason, bump TS back to
+      -- whatever it was before the pause call wrote 0. If that was also 0,
+      -- fall back to 1 so the particle isn't left stuck.
+      local tsBefore = (ref :: ParticleEmitter).TimeScale;
+      (ref :: ParticleEmitter).TimeScale = if tsBefore ~= 0 then tsBefore else 1
+    end
+  elseif entry.kind == "beam" then
+    if entry.saved and typeof(entry.saved) == "table" and entry.saved.TextureSpeed ~= 0 then
+      (ref :: Beam).TextureSpeed = entry.saved.TextureSpeed
+    end
+  elseif entry.kind == "sound" then
+    if entry.saved == true then
+      (ref :: Sound):Resume()
+    end
+    -- sound is a pure play/pause toggle — there's no "original value" to
+    -- fall back to, so clear saved each cycle. particle/beam intentionally
+    -- keep their saved across cycles (seeded at registration).
+    entry.saved = nil
+  end
+end
+
+function utility.pauseContext(context: any)
+  if not context or context._paused then
+    return
+  end
+
+  context._paused = true
+
+  if not context._pausableInstances then
+    return
+  end
+
+  for _, entry in context._pausableInstances do
+    utility.applyPauseEntry(entry)
+  end
+end
+
+function utility.resumeContext(context: any)
+  if not context or not context._paused then
+    return
+  end
+
+  context._paused = false
+
+  if not context._pausableInstances then
+    return
+  end
+
+  for _, entry in context._pausableInstances do
+    utility.applyResumeEntry(entry)
+  end
+end
+
 local LOCKS = setmetatable({} :: { [Instance]: boolean }, { __mode = "k" })
 
 function utility.lock(ref: Instance)
@@ -244,6 +425,10 @@ function utility.createEmitPromise(
     scope.depth = effectDepth
     scope.effects = effects
     scope._context = context
+
+    -- bind the context to the running coroutine so that pause-aware utilities
+    -- (tweens, timers, pausableWait) can find it without an explicit parameter
+    utility.bindContext(context)
 
     onCancel(function()
       if scope._onCancel then

@@ -61,7 +61,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
   local useDuration = common.emitDuration > 0
 
-  task.wait(common.emitDelay)
+  utility.pausableWait(common.emitDelay)
 
   if useDuration and not mustEmit then
     utility.forceEmit(ref, true)
@@ -95,7 +95,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
       )
     end
 
-    task.wait(common.emitDuration)
+    utility.pausableWait(common.emitDuration)
 
     utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
@@ -152,6 +152,8 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
     table.insert(
       promises,
       Promise.new(function(resolve)
+        utility.bindContext(scope._context)
+
         -- Calculate emission CFrame
         local cf = bezier_common.calculateEmissionCFrame(originCFrame, originSize, {
           face = common.face,
@@ -394,7 +396,7 @@ function bezier.emit(ref: Attachment, refObj: Part, scope: types.scope, mustEmit
 
   Promise.all(promises):await()
 
-  task.wait(common.destroyDelay)
+  utility.pausableWait(common.destroyDelay)
 end
 
 return bezier

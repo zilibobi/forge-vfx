@@ -83,7 +83,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
   local tpStart = attr.get(ref, "Transparency_Start", 0)
   local tpEnd = attr.get(ref, "Transparency_End", 0)
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   local promises = {}
   local originCFrame = utility.getTransformedOriginExtents(origin)
@@ -244,7 +244,7 @@ function ring.emit(origin: Attachment, ref: Part, scope: types.scope)
     end)
   end
 
-  task.wait(lifetime.Max + math.max(sizeEndDuration, offsetEndDuration))
+  utility.pausableWait(lifetime.Max + math.max(sizeEndDuration, offsetEndDuration))
 
   Promise.all(promises):await()
 end
