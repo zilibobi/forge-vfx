@@ -116,7 +116,9 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
     rng:NextNumber(minInitRot.z, maxInitRot.z)
   ) * utility.DEG_TO_RAD
 
-  task.wait(emitDelay)
+  local pauseContext = utility.getCurrentContext() or (scope :: any)._context
+
+  utility.pausableWait(emitDelay)
 
   if useEmitDuration and not mustEmit then
     utility.forceEmit(ref, true)
@@ -145,12 +147,15 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           nil,
           function()
             attr.setState(ref, "SpeedTweening", nil)
-          end
+          end,
+          nil,
+          nil,
+          pauseContext
         )
       )
     end
 
-    task.wait(emitDuration)
+    utility.pausableWait(emitDuration)
 
     utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
@@ -159,6 +164,8 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
   local parent = ref:FindFirstAncestorOfClass("Attachment") or start
   local realObj = typeof(obj) == "table" and obj._getReal() or obj
+
+  utility.registerPausable(scope, "meshPart", realObj)
 
   local origin = utility.getTransformedOriginExtents(parent)
   local goalCFrameOffset = start.CFrame:ToObjectSpace(goal.CFrame)
@@ -176,6 +183,10 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
   )
 
   local function updatePos(deltaTime: number)
+    if pauseContext and pauseContext._paused then
+      return
+    end
+
     local o = sync and utility.getTransformedOriginExtents(parent) or origin
     local add = initRot:Sign() * currentRotSpeed * deltaTime
 
@@ -222,7 +233,12 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       function(alpha, deltaTime)
         currentSpeed = utility.lerp(speedStart, speedEnd, alpha)
         return deltaTime
-      end
+      end,
+      nil,
+      nil,
+      nil,
+      nil,
+      pauseContext
     )
 
     table.insert(scope, speedTween)
@@ -234,7 +250,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
       tween.fromParams(attr.get(ref, "Part_CFrame_Curve", utility.default_bezier), duration, function(alpha, deltaTime)
         currentCFrame = CFrame.identity:Lerp(goalCFrameOffset, alpha)
         return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
-      end, speedTween)
+      end, speedTween, nil, nil, nil, pauseContext)
     )
   end
 
@@ -248,7 +264,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           currentRotSpeed = utility.lerp(rotSpeedStart, rotSpeedEnd, alpha)
           return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
         end,
-        speedTween
+        speedTween,
+        nil,
+        nil,
+        nil,
+        pauseContext
       )
     )
   end
@@ -263,7 +283,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           obj.Transparency = utility.lerp(tpStart, tpEnd, alpha)
           return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
         end,
-        speedTween
+        speedTween,
+        nil,
+        nil,
+        nil,
+        pauseContext
       )
     )
   else
@@ -289,7 +313,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         obj.Size = sizeStart:Lerp(sizeEnd, alpha)
 
         return deltaTime * speed
-      end, speedTween)
+      end, speedTween, nil, nil, nil, pauseContext)
     )
   else
     obj.Size = sizeStart
@@ -314,7 +338,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
               objMesh.Scale = utility.lerp(scaleStart, scaleEnd, alpha)
               return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
             end,
-            speedTween
+            speedTween,
+            nil,
+            nil,
+            nil,
+            pauseContext
           )
         )
       end
@@ -351,7 +379,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
           tween.fromParams(utility.default_bezier, duration + legacy_flipbookFadeOffset, function(alpha, deltaTime)
             displayDecal.Transparency = utility.lerp(legacy_decalST, legacy_decalET, alpha)
             return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
-          end, speedTween)
+          end, speedTween, nil, nil, nil, pauseContext)
         )
       end
     end
@@ -373,7 +401,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         end
 
         return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
-      end, speedTween)
+      end, speedTween, nil, nil, nil, pauseContext)
     )
   else
     for _, decal in decals do
@@ -393,7 +421,11 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
               decal.Transparency = utility.lerp(decal_tpStart, decal_tpEnd, alpha)
               return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
             end,
-            speedTween
+            speedTween,
+            nil,
+            nil,
+            nil,
+            pauseContext
           )
         )
       else
@@ -410,7 +442,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
             decal.Color3 = Oklab.toSRGB(a:Lerp(b, alpha), true)
 
             return deltaTime * (attr.getState(ref, "SpeedOverride", currentSpeed))
-          end, speedTween)
+          end, speedTween, nil, nil, nil, pauseContext)
         )
       end
 
@@ -443,7 +475,7 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
 
         table.insert(
           scope,
-          tween.fromParams(config.curve, changeDuration, flipbook_common.createUpdateCallback(config), speedTween)
+          tween.fromParams(config.curve, changeDuration, flipbook_common.createUpdateCallback(config), speedTween, nil, nil, nil, pauseContext)
         )
       end
     end
@@ -462,7 +494,9 @@ function mesh.emit(ref: Model, obj: BasePart, scope: types.scope, scale: number,
         else nil
     end,
     speedTween,
-    scope
+    scope,
+    nil,
+    pauseContext
   )
 
   Promise.all(promises):await()

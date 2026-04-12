@@ -83,8 +83,10 @@ function emitters.particle(
       end
     end)
 
+    utility.registerPausable(scope, "particle", clone)
     utility.try(`failed to emit particle with error: %s`, Particle.emit, obj, clone, scope, legacyScale)
   else
+    utility.registerPausable(scope, "particle", obj)
     utility.try(`failed to emit particle with error: %s`, Particle.emit, obj, obj, scope, legacyScale)
   end
 end
@@ -127,6 +129,7 @@ function emitters.beam(obj: Beam, scope: types.scope, legacyScale: number)
 
   table.insert(scope, clone)
 
+  utility.registerPausable(scope, "beam", clone)
   utility.try(`failed to emit beam with error: %s`, Beam.emit, obj, clone, scope, legacyScale)
 end
 
@@ -197,6 +200,7 @@ function emitters.mesh(
 
   for i = 1, emitCount do
     local promise = Promise.new(function(resolve)
+      utility.bindContext(context)
       utility.try(
         `failed to emit mesh with error: %s`,
         Mesh.emit,

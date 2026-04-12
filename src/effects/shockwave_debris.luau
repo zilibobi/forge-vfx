@@ -130,7 +130,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
     end
   end
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   for _ = 1, count do
     local iref = #partData ~= 0 and partData[rng:NextInteger(1, #partData)]
@@ -269,7 +269,7 @@ function debris.emit(origin: Attachment, ref: Part, scope: types.scope)
     end)
   end
 
-  task.wait(lifetime.Max + math.max(tpDuration, sizeDuration))
+  utility.pausableWait(lifetime.Max + math.max(tpDuration, sizeDuration))
 
   Promise.all(promises):await()
 end

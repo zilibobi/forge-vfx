@@ -41,6 +41,11 @@ local NOOP = function() end
 local EMPTY_ENV: types.EmitEnv = {
   Finished = Promise.resolve(),
   Clear = NOOP,
+  Pause = NOOP,
+  Resume = NOOP,
+  IsPaused = function()
+    return false
+  end,
 }
 
 function effects.init(api: types.Api)
@@ -192,11 +197,35 @@ local function emitWithContext(depth: number, context: { _promises: { any } }?, 
     end
     else NOOP
 
+  env.Pause = if context
+    then function()
+      utility.pauseContext(context)
+    end
+    else NOOP
+
+  env.Resume = if context
+    then function()
+      utility.resumeContext(context)
+    end
+    else NOOP
+
+  env.IsPaused = if context
+    then function()
+      return context._paused == true
+    end
+    else function()
+      return false
+    end
+
   return env
 end
 
 function effects.emit(depth: number, ...: Instance): types.EmitEnv
-  local context = { _promises = {} }
+  local context = {
+    _promises = {},
+    _paused = false,
+    _pausableInstances = {},
+  }
   return emitWithContext(depth, context, ...)
 end
 

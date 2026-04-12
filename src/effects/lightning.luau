@@ -301,7 +301,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
 
   local useDuration = common.emitDuration > 0
 
-  task.wait(common.emitDelay)
+  utility.pausableWait(common.emitDelay)
 
   if useDuration and not mustEmit then
     utility.forceEmit(ref, true)
@@ -335,7 +335,7 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
       )
     end
 
-    task.wait(common.emitDuration)
+    utility.pausableWait(common.emitDuration)
 
     utility.awaitEmitDuration(utility.stopEmitDuration(ref))
 
@@ -388,6 +388,8 @@ function lightning.emit(ref: Attachment, refObj: Part, scope: types.scope, mustE
     table.insert(
       promises,
       Promise.new(function(resolve)
+        utility.bindContext(scope._context)
+
         local cf = bezier_common.calculateEmissionCFrame(originCFrame, originSize, {
           face = common.face,
           spreadAngle = common.spreadAngle,

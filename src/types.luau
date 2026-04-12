@@ -11,6 +11,9 @@ export type scope = { any } & {
 export type EmitEnv = {
   Finished: typeof(Promise.resolve()),
   Clear: (self: EmitEnv) -> (),
+  Pause: (self: EmitEnv) -> (),
+  Resume: (self: EmitEnv) -> (),
+  IsPaused: (self: EmitEnv) -> boolean,
 }
 
 export type ApiCaches = {

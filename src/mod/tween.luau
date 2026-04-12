@@ -16,7 +16,8 @@ function tween.fromParams(
   awaitTween: RBXScriptConnection?,
   onFinish: ((organic: boolean) -> ())?,
   startAtZero: boolean?,
-  stepAtPriority: number?
+  stepAtPriority: number?,
+  contextOverride: any?
 )
   local bezier = tween.bezier_cache[params]
 
@@ -38,7 +39,18 @@ function tween.fromParams(
 
   local cleanupStepper
 
+  -- use an explicit context when provided; otherwise fall back to the
+  -- thread-local lookup.  the explicit path is more reliable because it
+  -- doesn't depend on which coroutine happens to be running at call time.
+  local context = contextOverride or utility.getCurrentContext()
+
   local function step(deltaTime)
+    -- when paused, freeze the tween in place: skip the elapsed update and
+    -- skip the animator entirely so it doesn't write stale property values
+    if context and context._paused then
+      return
+    end
+
     -- roblox tweens apparently don't start from alpha=0
     if not startAtZero and elapsed == 0 then
       elapsed = math.clamp(elapsed + deltaTime, 0, math.max(duration, 0))
@@ -102,7 +114,8 @@ function tween.timer(
   counter: (deltaTime: number, elapsed: number) -> number,
   awaitTween: RBXScriptConnection?,
   scope: {}?,
-  stepAtPriority: number?
+  stepAtPriority: number?,
+  contextOverride: any?
 )
   local main = coroutine.running()
 
@@ -110,7 +123,13 @@ function tween.timer(
 
   local cleanupStepper
 
+  local context = contextOverride or utility.getCurrentContext()
+
   local function step(deltaTime)
+    if context and context._paused then
+      return
+    end
+
     local result = counter(deltaTime, elapsed)
 
     if

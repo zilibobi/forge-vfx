@@ -16,7 +16,7 @@ function particle.emit(ref: ParticleEmitter, obj: ParticleEmitter, scope: types.
 
   local useDuration = duration > 0
 
-  task.wait(delay)
+  utility.pausableWait(delay)
 
   if useDuration then
     obj.Enabled = true
@@ -58,7 +58,7 @@ function particle.emit(ref: ParticleEmitter, obj: ParticleEmitter, scope: types.
   obj:Emit(count)
 
   if useDuration then
-    task.wait(duration)
+    utility.pausableWait(duration)
     obj.Enabled = false
   end
 

@@ -11,6 +11,25 @@ export interface EmitResult {
    * Clear all emitted effects
    */
   Clear(): void;
+
+  /**
+   * Pause the effect in place. Freezes particles, beams, sounds, mesh
+   * animations, decal flipbooks, tweens, delays and other timed work
+   * spawned by this emit call. Safe to call multiple times.
+   */
+  Pause(): void;
+
+  /**
+   * Resume a previously paused effect. Restores any state that was
+   * captured at pause time and continues all frozen animations.
+   * Safe to call multiple times.
+   */
+  Resume(): void;
+
+  /**
+   * Returns whether the effect is currently paused.
+   */
+  IsPaused(): boolean;
 }
 
 /**

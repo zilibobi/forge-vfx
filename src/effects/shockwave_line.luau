@@ -113,7 +113,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
     direction = -Vector3.zAxis
   end
 
-  task.wait(emitDelay)
+  utility.pausableWait(emitDelay)
 
   local promises = {}
 
@@ -348,7 +348,7 @@ function line.emit(origin: Attachment, ref: Part, scope: types.scope)
     end, nil, nil, true, utility.RENDER_PRIORITY + scope.depth)
   )
 
-  task.wait(lifetime.Max + duration + math.max(sizeEndDuration, offsetEndDuration))
+  utility.pausableWait(lifetime.Max + duration + math.max(sizeEndDuration, offsetEndDuration))
 
   Promise.all(promises):await()
 end
