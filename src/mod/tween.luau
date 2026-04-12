@@ -16,7 +16,8 @@ function tween.fromParams(
   awaitTween: RBXScriptConnection?,
   onFinish: ((organic: boolean) -> ())?,
   startAtZero: boolean?,
-  stepAtPriority: number?
+  stepAtPriority: number?,
+  contextOverride: any?
 )
   local bezier = tween.bezier_cache[params]
 
@@ -38,8 +39,10 @@ function tween.fromParams(
 
   local cleanupStepper
 
-  -- captured at call time, so the context follows this tween across renders
-  local context = utility.getCurrentContext()
+  -- use an explicit context when provided; otherwise fall back to the
+  -- thread-local lookup.  the explicit path is more reliable because it
+  -- doesn't depend on which coroutine happens to be running at call time.
+  local context = contextOverride or utility.getCurrentContext()
 
   local function step(deltaTime)
     -- when paused, freeze the tween in place: skip the elapsed update and
@@ -111,7 +114,8 @@ function tween.timer(
   counter: (deltaTime: number, elapsed: number) -> number,
   awaitTween: RBXScriptConnection?,
   scope: {}?,
-  stepAtPriority: number?
+  stepAtPriority: number?,
+  contextOverride: any?
 )
   local main = coroutine.running()
 
@@ -119,7 +123,7 @@ function tween.timer(
 
   local cleanupStepper
 
-  local context = utility.getCurrentContext()
+  local context = contextOverride or utility.getCurrentContext()
 
   local function step(deltaTime)
     if context and context._paused then

@@ -153,6 +153,8 @@ function utility.registerPausable(scope: any, kind: string, ref: Instance)
     initialSaved = (ref :: ParticleEmitter).TimeScale
   elseif kind == "beam" then
     initialSaved = { TextureSpeed = (ref :: Beam).TextureSpeed }
+  elseif kind == "meshPart" then
+    initialSaved = (ref :: BasePart).Anchored
   end
 
   local entry = {
@@ -200,6 +202,10 @@ function utility.applyPauseEntry(entry: any)
     else
       entry.saved = false
     end
+  elseif entry.kind == "meshPart" then
+    local part = ref :: BasePart
+    entry.saved = part.Anchored
+    part.Anchored = true
   end
 end
 
@@ -235,6 +241,9 @@ function utility.applyResumeEntry(entry: any)
     -- fall back to, so clear saved each cycle. particle/beam intentionally
     -- keep their saved across cycles (seeded at registration).
     entry.saved = nil
+  elseif entry.kind == "meshPart" then
+    local part = ref :: BasePart
+    part.Anchored = if entry.saved ~= nil then entry.saved else false
   end
 end
 

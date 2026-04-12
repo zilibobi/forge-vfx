@@ -139,7 +139,7 @@ function camera_shake.emit(ref: RayValue, scope: types.scope)
     table.insert(scope, speedTween)
   end
 
-  local pauseContext = utility.getCurrentContext()
+  local pauseContext = utility.getCurrentContext() or (scope :: any)._context
 
   table.insert(
     scope,
